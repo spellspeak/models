@@ -7,12 +7,16 @@ pipeline_tag: text-classification
 base_model: jhu-clsp/ettin-encoder-32m
 tags:
   - onnx
-  - games
+  - voice-agents
+  - conversational-ai
+  - multi-agent
+  - multi-party-conversation
+  - addressee-detection
+  - speech
+  - real-time
+  - pipecat
   - npc
   - dialogue
-  - voice-agents
-  - addressee
-  - spellspeak
 ---
 
 # SpellSpeak Audience · RC1

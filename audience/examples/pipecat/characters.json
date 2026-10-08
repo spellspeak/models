@@ -1,0 +1,87 @@
+[
+  {
+    "id": "maya",
+    "name": "Maya",
+    "role": "Biohacker",
+    "tagline": "Grows luminous plants that keep Neon Yard breathing. Always testing a new strain.",
+    "topics": "biotech, glowing plants, hydroponics, air filters, urban gardens, biohacking",
+    "aliases": [
+      "biohacker",
+      "plant grower"
+    ],
+    "features": {
+      "appearance": "woman",
+      "hair": "long red braid",
+      "clothing": "lime-green sleeveless biotech suit with black panels and a utility belt",
+      "eyewear": "round safety glasses",
+      "holding": "a handheld scanner",
+      "standing beside": "a cylindrical glass plant tank containing luminous green plants"
+    },
+    "voice": "aura-2-thalia-en",
+    "hex": "#c5f76b"
+  },
+  {
+    "id": "theo",
+    "name": "Theo",
+    "role": "Street mechanic",
+    "tagline": "Repairs Neon Yard's broken machines with a silver arm and a dry sense of humour.",
+    "topics": "robot repairs, cybernetic limbs, tools, engines, salvaged electronics, workshop life",
+    "aliases": [
+      "mechanic",
+      "robot repairer"
+    ],
+    "features": {
+      "appearance": "broad man",
+      "hair": "short dark hair and beard",
+      "clothing": "black work tank top and orange overalls with upper half tied at the waist",
+      "arm": "an oversized silver cybernetic arm",
+      "holding": "a wrench",
+      "standing beside": "an orange repair bench with a dismantled robot head"
+    },
+    "voice": "aura-2-apollo-en",
+    "hex": "#ffb454"
+  },
+  {
+    "id": "juno",
+    "name": "Juno",
+    "role": "Courier",
+    "tagline": "Knows every shortcut above the rain-soaked streets. Her hoverbike is always ready.",
+    "topics": "deliveries, hoverbikes, city shortcuts, transit routes, rooftop roads, street racing",
+    "aliases": [
+      "courier",
+      "bike messenger"
+    ],
+    "features": {
+      "appearance": "woman",
+      "hair": "short purple hair",
+      "clothing": "yellow raincoat",
+      "carrying": "a motorcycle helmet",
+      "standing beside": "a magenta hoverbike"
+    },
+    "voice": "aura-2-luna-en",
+    "hex": "#ff5fa2"
+  },
+  {
+    "id": "otto",
+    "name": "Otto",
+    "role": "Cyborg data broker",
+    "tagline": "A cyborg carrying city secrets in an armoured chassis. Trades useful tips beside the vending machine.",
+    "topics": "city rumours, data networks, encrypted messages, information trades, local history, night markets",
+    "aliases": [
+      "cyborg data broker",
+      "data broker"
+    ],
+    "features": {
+      "appearance": "humanoid cyborg, small partial human face, predominantly mechanical body",
+      "hair": "short silver-white hair",
+      "eyes": "one human eye and one glowing amber mechanical eye",
+      "cybernetics": "exposed metal cranium, jaw and neck; mechanical torso; both metal arms and legs",
+      "stature": "adult human height",
+      "body": "dark structural chassis with cyan armor panels",
+      "holding": "a small glowing data tablet",
+      "standing beside": "a cyan vending machine"
+    },
+    "voice": "aura-2-orion-en",
+    "hex": "#58e1ef"
+  }
+]

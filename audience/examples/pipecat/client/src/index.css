@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/* JetBrains Mono, the upstream variable font (OFL, see assets/fonts/OFL.txt): the whole UI is a terminal,
+   and the block and arrow glyphs the meters are drawn with live in it. */
+@font-face {
+  font-family: "JetBrains Mono Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url("./assets/fonts/JetBrainsMono-Variable.woff2") format("woff2-variations");
+}
+
+@theme {
+  --font-sans: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-mono: var(--font-sans);
+  --color-background: #121218;
+  --color-foreground: #c9cee3;
+  --color-card: #1a1b23;
+  --color-muted: #1f202a;
+  --color-muted-foreground: #6e7288;
+  --color-border: #2a2c38;
+  --color-active: #9ece6a;
+  --color-inactive: #f7768e;
+  --color-agent: #bb9af7;
+  --color-client: #7aa2f7;
+  --color-tool: #e0af68;
+  
+  --radius: 0rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+    border-radius: 0 !important;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+  html {
+    font-family: var(--font-sans);
+  }
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+  }
+}
+
+/* The agent who is speaking: their seat pulses in their tint. */
+@keyframes floor {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--tint) 40%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--tint) 0%, transparent); }
+}
+.animate-floor {
+  animation: floor 1.6s ease-in-out infinite;
+}

@@ -1,0 +1,27 @@
+[project]
+name = "audience-pipecat"
+version = "0.1.0"
+description = "Four agents in one Pipecat bot; SpellSpeak Audience reads who each user turn is for and hands it to them"
+requires-python = ">=3.12"
+dependencies = [
+    "pipecat-ai[deepgram,openai,runner,webrtc]==1.12.0",
+    "python-dotenv>=1.1,<2",
+    # Audience's reference runtime (releases/rc1/runtime)
+    "onnxruntime>=1.24",
+    "tokenizers>=0.23",
+    "numpy>=2.0",
+    "pydantic>=2.6",
+    "huggingface_hub>=0.30",  # fetches the model files when the release folder has none
+]
+
+[dependency-groups]
+dev = ["ruff>=0.12.11,<1"]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP"]
