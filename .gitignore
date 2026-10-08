@@ -1,0 +1,26 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+
+# Model files sit beside a release's example but never in git (see the manifest for the list)
+tone/releases/*/model*.onnx
+tone/releases/*/tokenizer.json
+tone/releases/*/config.json
+audience/releases/*/encoder.onnx
+audience/releases/*/head.onnx
+audience/releases/*/tokenizer.json
+audience/releases/*/config.json
+audience/space/release/
+*.tsbuildinfo

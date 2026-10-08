@@ -1,0 +1,86 @@
+{
+ "name": "SpellSpeak Audience",
+ "release": "rc1",
+ "package": "spellspeak-audience-rc1.2",
+ "created": "2026-10-08T21:35:48Z",
+ "model_run": "addr-r2b-ettin-32m-tt-s1",
+ "inputs": "addressee-tt-0.5",
+ "files": {
+  "README.md": {
+   "bytes": 9520,
+   "sha256": "f9e7d7406a3cbb5cf54e9be143004a4cfb7351c415bc1ae087b8ba97d0bb277f"
+  },
+  "config.json": {
+   "bytes": 342,
+   "sha256": "4dcd9366bce0f930750d01b57f79503eb8b9d87b254a81c190be0085b7380832"
+  },
+  "encoder.onnx": {
+   "bytes": 127960962,
+   "sha256": "7960e1bc311030450d9e6648829c6f5a82e392c502b7853987e89dc2feb62de5"
+  },
+  "example.py": {
+   "bytes": 2799,
+   "sha256": "e4b5687cbfad34eb3802608848d34dc7a6505e43093827a4f53fc3193c92f39b"
+  },
+  "head.onnx": {
+   "bytes": 3684676,
+   "sha256": "cb21b22f047d798148da89922b352dd3247840afb3828de6e0aa1e964e798f83"
+  },
+  "requirements.txt": {
+   "bytes": 270,
+   "sha256": "7ca7dcd5aa19a996d459ef0ab9f8e43f61d814931525369e57664044e66d72db"
+  },
+  "runtime/contracts/__init__.py": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "runtime/contracts/schemas/__init__.py": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "runtime/contracts/schemas/addressee.py": {
+   "bytes": 6998,
+   "sha256": "fb8fda50516f446bcc368e362dcf799b70f09a8ca1a18c1ebb5c912999695b8c"
+  },
+  "runtime/contracts/schemas/person_card.py": {
+   "bytes": 4049,
+   "sha256": "7d40834f7a3dd088fce5a5489f421ed6b6d4bc8f51c50cd89363b81aad132b28"
+  },
+  "runtime/harness/__init__.py": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "runtime/harness/addressee/__init__.py": {
+   "bytes": 613,
+   "sha256": "34bb4062a62803b2aa67fbc1b24e54efd0e198a2d978e419a9dcec99725846b1"
+  },
+  "runtime/harness/addressee/bands.py": {
+   "bytes": 3176,
+   "sha256": "ffbc520ee544ebc2fea6a25fb99b2d6edd3232a339a6d49b85a96a16de5db5d8"
+  },
+  "runtime/harness/addressee/classifier.py": {
+   "bytes": 7462,
+   "sha256": "36f65ff68b6b5e39d0650cf9001d9f46c10fee79a34df3c06aba30c3ba814941"
+  },
+  "runtime/harness/addressee/evidence.py": {
+   "bytes": 8048,
+   "sha256": "881c8f75aca1df4fe16bbcf2a5ce24621865937c697e12fe3cb3c4204df3a47b"
+  },
+  "runtime/harness/addressee/features.py": {
+   "bytes": 4513,
+   "sha256": "306388bfc4c0de5d2ce43f03846aede49ad205b016e9a9ca3b8153935fa55b86"
+  },
+  "runtime/harness/addressee/render.py": {
+   "bytes": 4314,
+   "sha256": "7474955c00e10abc53edfde258b6621d1e9cf1a64ad8900f54f6ed9f83337f24"
+  },
+  "runtime/harness/addressee/rules.py": {
+   "bytes": 11985,
+   "sha256": "4bb6bbf3557c928ae958737293e9dace118261e7b2e29fcac95367cbde03bac4"
+  },
+  "tokenizer.json": {
+   "bytes": 3583325,
+   "sha256": "82d1ca5ef2019321c91a01b78653345e6fe8ef25a38b7d83f7857c380649c7cf"
+  }
+ }
+}

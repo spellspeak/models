@@ -1,0 +1,34 @@
+[
+  {
+    "id": "maya",
+    "name": "Maya",
+    "role": "Botanist",
+    "tagline": "Grows everything in the kitchen garden. Talks to her tomatoes.",
+    "voice": "aura-2-thalia-en",
+    "hex": "#c3e88d"
+  },
+  {
+    "id": "theo",
+    "name": "Theo",
+    "role": "Chef",
+    "tagline": "Cooks whatever Maya grows. Grumbles about it the whole time.",
+    "voice": "aura-2-apollo-en",
+    "hex": "#ff9e64"
+  },
+  {
+    "id": "juno",
+    "name": "Juno",
+    "role": "Musician",
+    "tagline": "Plays five instruments badly and one brilliantly. Always humming.",
+    "voice": "aura-2-luna-en",
+    "hex": "#ff757f"
+  },
+  {
+    "id": "otto",
+    "name": "Otto",
+    "role": "Sea captain",
+    "tagline": "Retired, allegedly. Every story has a storm in it.",
+    "voice": "aura-2-orion-en",
+    "hex": "#7aa2f7"
+  }
+]

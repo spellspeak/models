@@ -1,0 +1,72 @@
+name: SpellSpeak Tone
+release: rc1
+internal_release: spellspeak-tone-rc1  # first released the same day as spellspeak-listener-rc1, the same model files
+license: Apache-2.0
+weights:
+  huggingface: null  # not yet uploaded; the R2 keys below are the current source
+created: '2026-10-08T15:08:47Z'
+r2_prefix: models/linecls/releases/spellspeak-tone-rc1/
+tarball:
+  key: models/linecls/releases/spellspeak-tone-rc1.tar.gz
+  bytes: 173019841
+  sha256: f9509cd384482c383e3eff3db4449a0ea02431ea5bc6cb18c3745697091ec5a0
+source:
+  run_id: linecls-r2-student-minilm-l6-r6s1-seed1
+  export: models/linecls/linecls-r2-student-minilm-l6-r6s1-seed1/export-cal/
+  commit: 8a3f7f8ff2832f706eac3814701587eeaecde5e4
+  git_tag: spellspeak-tone-rc1
+  git_tag_commit: 1899ea24f77323ec92864b10b2321bb60711bba4
+  repo: spellspeak/model-training
+tau: 0.775
+calibrated: true
+card: MODEL_CARD.md  # models/cards/spellspeak-tone-rc1.md in model-training
+experiment: exp-241-linecls-tone-package
+files:
+  MODEL_CARD.md:
+    bytes: 5101
+    sha256: 639b76978c9673877580d3b64af44af83fba994af8ec55685a92bddd0418c40b
+  config.json:
+    bytes: 1074
+    sha256: 0094204b3bdd09ccc6f66e2f97f80d145dd854da111f06eedec595b63495a600
+  example.py:
+    bytes: 715
+    sha256: eb0c9a5862ff3efbb54aed843c4079b79d983b1da65c027de5bb01254bf75128
+  model.onnx:
+    bytes: 93975131
+    sha256: 71e490810390f362d0e24e37338f11df96fa4e504a1fdb2b69f3eda2ae69966f
+  model.opt.onnx:
+    bytes: 93945216
+    sha256: 3632df80eeedcfce216c3ea40d996ca811c33b4b15c7507e99012c3bd6f1d547
+  requirements.txt:
+    bytes: 171
+    sha256: f88b9f2516773ee5877aabe603550a0dd35d9fb8f1fbe32bb1116c7d81b6b009
+  runtime/contracts/__init__.py:
+    bytes: 0
+    sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  runtime/contracts/schemas/__init__.py:
+    bytes: 0
+    sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  runtime/contracts/schemas/line_tags.py:
+    bytes: 6314
+    sha256: fc53341661f5021e96b6c3c6a28fa3481a99e5094a25fd4dbcf7ea6957a7bc4c
+  runtime/harness/__init__.py:
+    bytes: 0
+    sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  runtime/harness/expression/__init__.py:
+    bytes: 125
+    sha256: 3f130507594559f8761d521879dbd166e898a6cdc39732517fb7290194f6ae8b
+  runtime/harness/expression/calibrate.py:
+    bytes: 2452
+    sha256: 80a83c84f9d04bc20a41a3844ecf4d9b556e8ad39148b54cfba7eef562fe8f6f
+  runtime/harness/expression/classifier.py:
+    bytes: 4991
+    sha256: 8006bd50610b56afdc8756d30f317b21d50004c5b8423e8f7937edfca99fafbd
+  runtime/harness/expression/decide.py:
+    bytes: 1421
+    sha256: 3742021bb25777e0f75639087bc42aafec7263fa77d46dc2717213894b721f38
+  runtime/harness/expression/render.py:
+    bytes: 2074
+    sha256: 3cb262a22fa41f9791b4e78674b9675cbb8a793202294a0c8fc1f048a0cbe98c
+  tokenizer.json:
+    bytes: 711661
+    sha256: da0e79933b9ed51798a3ae27893d3c5fa4a201126cef75586296df9b4d2c62a0

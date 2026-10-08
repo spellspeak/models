@@ -1,0 +1,20 @@
+[project]
+name = "tone-table"
+version = "0.1.0"
+description = "Four characters at a table; the SpellSpeak Tone reads every line and moves their hearts"
+requires-python = ">=3.12"
+dependencies = [
+    "pipecat-ai[deepgram,openai,runner,silero,webrtc]==1.12.0",
+    "python-dotenv>=1.1,<2",
+    # Tone's reference runtime (releases/rc1/runtime)
+    "onnxruntime>=1.24",
+    "tokenizers>=0.23",
+    "numpy>=2.0",
+    "pydantic>=2.6",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100

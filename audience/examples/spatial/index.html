@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audience Spatial</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --line: #dddbd5; --floor: #efece5;
+    --grid: #e3e0d8; --accent: #2b6cb0; --accent-soft: #2b6cb033; --warn: #b7791f; --ok: #2f855a; --bad: #c53030;
+    --rules: #8a8780; --model: #2b6cb0; --player: #1d1d1b; --object: #b7791f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161615; --panel: #1f1f1d; --ink: #ecebe7; --muted: #a09e98; --line: #34332f; --floor: #22211f;
+      --grid: #2c2b28; --accent: #63a4ff; --accent-soft: #63a4ff33; --warn: #f6ad55; --ok: #68d391; --bad: #fc8181;
+      --rules: #a09e98; --model: #63a4ff; --player: #ecebe7; --object: #f6ad55;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 16px; margin: 0 8px 0 0; font-weight: 600; }
+  header label { color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+  main { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr); gap: 16px; padding: 16px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; font-weight: 600; }
+  svg { width: 100%; height: auto; display: block; touch-action: none; -webkit-user-select: none; user-select: none; background: var(--floor); border-radius: 8px; }
+  body.dragging { -webkit-user-select: none; user-select: none; }
+  body.dragging, body.dragging * { cursor: grabbing !important; }
+  body.dragging.turning, body.dragging.turning * { cursor: crosshair !important; }
+  textarea, input[type=text], select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+  textarea { width: 100%; resize: vertical; min-height: 44px; }
+  button { font: inherit; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .hint { color: var(--muted); font-size: 12px; }
+  .err { color: var(--bad); white-space: pre-wrap; }
+  .verdict { font-size: 15px; margin: 2px 0 10px; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { padding: 3px 4px; text-align: left; vertical-align: middle; font-size: 13px; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  .bars td.name { width: 30%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+  .bar { position: relative; height: 16px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+  .bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+  .bar > em { position: absolute; right: 4px; top: -1px; font-style: normal; font-size: 11px; color: var(--ink); }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; font-size: 12px; color: var(--muted); }
+  .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; margin: 0; color: var(--muted); }
+  .hist-line { display: grid; grid-template-columns: 1fr 1fr 2fr auto; gap: 4px; margin-bottom: 4px; }
+  .hist-line input { min-width: 0; }
+  .muted { color: var(--muted); }
+  .pill { display: inline-block; padding: 0 6px; border-radius: 9px; font-size: 12px; border: 1px solid var(--line); color: var(--muted); }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Who is the player talking to?</h1>
+  <label>Scene <select id="sceneSel"></select></label>
+  <label><input type="checkbox" id="engRules" checked> rules</label>
+  <label><input type="checkbox" id="engModel"> model</label>
+  <label><input type="checkbox" id="textOnly"> text only (no facts)</label>
+  <span class="hint" id="status"></span>
+</header>
+<main>
+  <section>
+    <div class="card" style="padding:8px">
+      <svg id="room" viewBox="0 0 20 12" aria-label="Top-down room"></svg>
+      <div class="hint" style="margin-top:6px">Drag people, objects and the player. Drag the small dot to turn someone, or scroll over them. Rings: near, mid-range, earshot. The wedge is the player's gaze.</div>
+    </div>
+    <div class="card">
+      <h2>The line</h2>
+      <textarea id="line" rows="2" placeholder="What does the player say?"></textarea>
+      <div class="row" style="margin-top:6px"><span class="hint">Scores update as you type and drag.</span></div>
+    </div>
+    <div class="card">
+      <h2>Conversation so far</h2>
+      <div id="history"></div>
+      <div class="row"><button id="addHist">Add a line</button><span class="hint">Oldest first. The last line decides who asked and who the player was talking with.</span></div>
+    </div>
+  </section>
+  <section>
+    <div class="card">
+      <h2>Who it is for</h2>
+      <div class="verdict" id="verdict"></div>
+      <div class="legend" id="legend"></div>
+      <table class="bars" id="bars"></table>
+      <div class="err" id="errors"></div>
+    </div>
+    <div class="card">
+      <h2>What the game knows</h2>
+      <div class="row" style="margin-bottom:6px">
+        <label class="muted"><input type="checkbox" id="groupByHand"> set the group by hand</label>
+        <span class="hint">Off: the circle rule (within 2.5 m, in front, facing you).</span>
+      </div>
+      <table id="facts"></table>
+    </div>
+    <div class="card">
+      <h2>Heatmap</h2>
+      <div class="row">
+        <select id="heatPerson"></select>
+        <select id="heatEngine"><option value="rules">rules</option><option value="model">model</option></select>
+        <button id="heatGo">Show</button><button id="heatClear">Clear</button>
+      </div>
+      <div class="hint">Colours the floor by how likely the line is for that person if they stood there. Darker is more likely. Grey is where they could not hear the line.</div>
+    </div>
+    <div class="card">
+      <h2>What the model reads</h2>
+      <pre id="rendered"></pre>
+    </div>
+  </section>
+</main>
+<script>
+const ENGINE_COLORS = {rules: "var(--rules)", model: "var(--model)"};
+let DATA = null, scene = null, last = null, heat = null, timer = null;
+let drag = null, raised = null;  // the drag in progress; the scene object dragged last, drawn above the others
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const clone = o => JSON.parse(JSON.stringify(o));
+
+function el(tag, attrs = {}, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function card(p) { return typeof p.card === "string" ? DATA.cards[p.card] : p.card; }
+function pid(p) { return card(p).id; }
+function label(id) { if (id === "player") return "the player"; const p = scene.people.find(q => pid(q) === id); return p ? card(p).label : id; }
+
+async function api(path, body) {
+  const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {});
+  const j = await r.json();
+  if (j.error) throw new Error(j.error);
+  return j;
+}
+
+async function init() {
+  DATA = await api("/api/scenes");
+  const sel = $("sceneSel");
+  for (const [k, s] of Object.entries(DATA.scenes)) sel.add(new Option(s.title, k));
+  sel.onchange = () => load(sel.value);
+  $("engModel").disabled = !DATA.engines.model;
+  if (DATA.engines.model) $("engModel").checked = true;
+  $("status").textContent = DATA.engines.model ? `model: ${DATA.engines.model_name}` : `rules only. ${DATA.engines.model_error}`;
+  ["engRules", "engModel", "textOnly"].forEach(id => $(id).onchange = () => schedule());
+  $("line").oninput = () => { scene.text = $("line").value; schedule(); };
+  $("addHist").onclick = () => { scene.history.push({speaker: pid(scene.people[0]), to: ["player"], text: ""}); drawHistory(); schedule(); };
+  $("groupByHand").onchange = () => { scene.group = $("groupByHand").checked ? [] : null; drawFacts(); schedule(); };
+  $("heatGo").onclick = showHeat;
+  $("heatClear").onclick = () => { heat = null; draw(); };
+  load(sel.value);
+}
+
+function load(name) {
+  scene = clone(DATA.scenes[name]);
+  scene.group = null; scene.following = []; scene.asked = []; scene.last_spoke = null; scene.history = scene.history || [];
+  $("line").value = scene.text || "";
+  $("groupByHand").checked = false;
+  endDrag(); raised = null;
+  heat = null;
+  const hp = $("heatPerson"); hp.innerHTML = "";
+  for (const p of scene.people) hp.add(new Option(card(p).label, pid(p)));
+  $("heatEngine").options[1].disabled = !DATA.engines.model;
+  drawHistory(); draw(); schedule(0);
+}
+
+// --- the room ---------------------------------------------------------------------------------------------------
+function draw() {
+  const svg = $("room");
+  svg.setAttribute("viewBox", `0 0 ${scene.room.w} ${scene.room.h}`);
+  svg.innerHTML = "";
+  if (heat) {
+    const g = el("g", {}, svg);
+    heat.cells.forEach((row, j) => row.forEach((v, i) => {
+      if (v === null) { el("rect", {x: i * heat.step, y: j * heat.step, width: heat.step + .01, height: heat.step + .01, fill: "var(--muted)", "fill-opacity": .12}, g); return; }
+      if (v < .02) return;
+      el("rect", {x: i * heat.step, y: j * heat.step, width: heat.step + .01, height: heat.step + .01, fill: "var(--accent)", "fill-opacity": (0.75 * v).toFixed(3)}, g);
+    }));
+  }
+  const grid = el("g", {stroke: "var(--grid)", "stroke-width": .02}, svg);
+  for (let x = 1; x < scene.room.w; x++) el("line", {x1: x, y1: 0, x2: x, y2: scene.room.h}, grid);
+  for (let y = 1; y < scene.room.h; y++) el("line", {x1: 0, y1: y, x2: scene.room.w, y2: y}, grid);
+  const P = scene.player, B = DATA.bands;
+  for (const [r, dash] of [[B.near_m, ".15 .1"], [B.mid_m, ".3 .2"], [B.earshot_m, ".5 .3"]])
+    el("circle", {cx: P.x, cy: P.y, r, fill: "none", stroke: "var(--muted)", "stroke-width": .03, "stroke-dasharray": dash, opacity: .7}, svg);
+  const a = B.gaze_half_angle_deg * Math.PI / 180, f = P.facing * Math.PI / 180, R = 30;
+  el("path", {d: `M${P.x},${P.y} L${P.x + R * Math.cos(f - a)},${P.y + R * Math.sin(f - a)} L${P.x + R * Math.cos(f + a)},${P.y + R * Math.sin(f + a)} Z`, fill: "var(--accent-soft)"}, svg);
+  const ents = new Map();  // scene object -> its group, so the one dragged last can go on top
+  for (const o of scene.objects || []) {
+    const g = el("g", {class: "drag", cursor: "grab"}, svg);
+    el("rect", {x: o.x - .3, y: o.y - .3, width: .6, height: .6, rx: .1, fill: "var(--object)", opacity: .8}, g);
+    const t = el("text", {x: o.x, y: o.y + .75, "font-size": .38, "text-anchor": "middle", fill: "var(--muted)"}, g); t.textContent = o.name;
+    dragMove(g, o);
+    ents.set(o, g);
+  }
+  const primary = primaryResult();
+  for (const p of scene.people) {
+    const id = pid(p), out = last && last.out_of_earshot.includes(id);
+    const prob = primary && primary.answer && primary.answer.addressed[id] !== undefined ? primary.answer.addressed[id] : 0;
+    const ent = el("g", {}, svg), g = el("g", {cursor: "grab"}, ent);
+    el("circle", {cx: p.x, cy: p.y, r: .45, fill: out ? "none" : "var(--panel)", stroke: out ? "var(--muted)" : "var(--ink)", "stroke-width": .05, "stroke-dasharray": out ? ".1 .08" : ""}, g);
+    if (!out) el("circle", {cx: p.x, cy: p.y, r: .45, fill: "var(--accent)", "fill-opacity": (prob * .85).toFixed(3)}, g);
+    const t = el("text", {x: p.x, y: p.y + .95, "font-size": .4, "text-anchor": "middle", fill: out ? "var(--muted)" : "var(--ink)"}, g);
+    t.textContent = card(p).label + (out ? " (can't hear)" : "");
+    dragMove(g, p);
+    turnHandle(ent, p, "var(--ink)");
+    ents.set(p, ent);
+  }
+  const ent = el("g", {}, svg), g = el("g", {cursor: "grab"}, ent);
+  el("circle", {cx: P.x, cy: P.y, r: .4, fill: "var(--player)"}, g);
+  const t = el("text", {x: P.x, y: P.y + .9, "font-size": .4, "text-anchor": "middle", fill: "var(--ink)", "font-weight": 600}, g); t.textContent = "you";
+  dragMove(g, P);
+  turnHandle(ent, P, "var(--player)", true);
+  ents.set(P, ent);
+  if (ents.has(raised)) svg.appendChild(ents.get(raised));
+}
+
+function svgPoint(evt) {
+  const svg = $("room"), pt = svg.createSVGPoint();
+  pt.x = evt.clientX; pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+// Dragging. draw() rebuilds the whole SVG, so the node that was pressed is gone after the first move. The drag
+// therefore lives in `drag` (which scene object, moving or turning), the pointer is captured by the <svg> itself
+// (never rebuilt), and the moves and the release are read on window.
+function startDrag(e, kind, obj) {
+  if (drag || e.button !== 0) return;  // one drag at a time, primary button or touch only
+  e.preventDefault(); e.stopPropagation();
+  try { $("room").setPointerCapture(e.pointerId); } catch (_) { /* window still sees the moves */ }
+  const p = svgPoint(e);
+  drag = {kind, obj, id: e.pointerId, sx: p.x, sy: p.y, ox: obj.x, oy: obj.y};
+  document.body.classList.add("dragging");
+  document.body.classList.toggle("turning", kind === "turn");
+}
+function dragTo(e) {
+  if (!drag || e.pointerId !== drag.id) return;
+  if (e.pointerType === "mouse" && !(e.buttons & 1)) return endDrag(e);  // released somewhere we did not hear it
+  const p = svgPoint(e), o = drag.obj;
+  if (drag.kind === "turn") o.facing = +(Math.atan2(p.y - o.y, p.x - o.x) * 180 / Math.PI).toFixed(1);
+  else {
+    o.x = +clamp(drag.ox + p.x - drag.sx, .3, scene.room.w - .3).toFixed(2);
+    o.y = +clamp(drag.oy + p.y - drag.sy, .3, scene.room.h - .3).toFixed(2);
+  }
+  raised = o; heat = null; draw(); schedule();
+}
+function endDrag(e) {
+  if (!drag || (e && e.pointerId !== drag.id)) return;
+  drag = null;
+  document.body.classList.remove("dragging", "turning");
+}
+window.addEventListener("pointermove", dragTo);
+window.addEventListener("pointerup", endDrag);
+window.addEventListener("pointercancel", endDrag);
+
+function dragMove(node, obj) {
+  node.addEventListener("pointerdown", e => startDrag(e, "move", obj));
+  node.addEventListener("wheel", e => {
+    if (obj.facing === undefined) return;
+    e.preventDefault();
+    // A mouse wheel notch (about 100 px) turns 15 degrees; a trackpad's many small deltas add up to the same rate.
+    const px = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
+    obj.facing = +((((obj.facing + clamp(px, -100, 100) * 0.15) % 360) + 360) % 360).toFixed(1);
+    draw(); schedule();
+  }, {passive: false});
+}
+function turnHandle(parent, obj, color, big) {
+  const f = obj.facing * Math.PI / 180, L = big ? 1.0 : .8, hx = obj.x + L * Math.cos(f), hy = obj.y + L * Math.sin(f);
+  // the facing line starts at the token's centre: let presses fall through it to the token
+  el("line", {x1: obj.x, y1: obj.y, x2: hx, y2: hy, stroke: color, "stroke-width": big ? .08 : .05, "pointer-events": "none"}, parent);
+  el("circle", {cx: hx, cy: hy, r: big ? .16 : .12, fill: color}, parent);
+  // A bigger invisible circle over the dot, so it is easy to grab. It stops short of the token, so it never
+  // steals a press meant to move the token.
+  const hit = el("circle", {cx: hx, cy: hy, r: big ? .36 : .32, fill: "transparent", cursor: "crosshair"}, parent);
+  hit.addEventListener("pointerdown", e => startDrag(e, "turn", obj));
+}
+
+// --- conversation state -----------------------------------------------------------------------------------------
+function drawHistory() {
+  const box = $("history"); box.innerHTML = "";
+  const who = ["player", ...scene.people.map(pid)];
+  scene.history.forEach((h, i) => {
+    const row = document.createElement("div"); row.className = "hist-line";
+    const sp = document.createElement("select"); for (const w of who) sp.add(new Option(label(w), w)); sp.value = h.speaker;
+    const to = document.createElement("select"); to.add(new Option("to the room", "")); for (const w of who) to.add(new Option("to " + label(w), w));
+    to.value = (h.to && h.to[0]) || "";
+    const tx = document.createElement("input"); tx.type = "text"; tx.value = h.text; tx.placeholder = "what they said";
+    const rm = document.createElement("button"); rm.textContent = "x"; rm.title = "remove";
+    sp.onchange = () => { h.speaker = sp.value; if (h.to[0] === h.speaker) { h.to = []; to.value = ""; } schedule(); };
+    to.onchange = () => { h.to = to.value && to.value !== h.speaker ? [to.value] : []; schedule(); };
+    tx.oninput = () => { h.text = tx.value; schedule(); };
+    rm.onclick = () => { scene.history.splice(i, 1); drawHistory(); schedule(); };
+    row.append(sp, to, tx, rm); box.appendChild(row);
+  });
+}
+
+function drawFacts() {
+  const t = $("facts"); t.innerHTML = "";
+  const head = t.insertRow(); ["", "dist", "view", "group", "follows", "asked", "spoke last"].forEach(h => { const th = document.createElement("th"); th.textContent = h; head.appendChild(th); });
+  for (const p of scene.people) {
+    const id = pid(p), b = last && last.bands[id], r = t.insertRow();
+    r.insertCell().textContent = card(p).label;
+    r.insertCell().textContent = b ? `${b.distance} ${b.distance_m.toFixed(1)}m` : "";
+    r.insertCell().textContent = b ? (b.in_view ? "yes" : "no") : "";
+    const g = r.insertCell();
+    if (scene.group === null) g.textContent = b ? (b.in_group ? "yes" : "no") : "";
+    else g.appendChild(check(scene.group.includes(id), v => { scene.group = v ? [...scene.group, id] : scene.group.filter(x => x !== id); }));
+    r.insertCell().appendChild(check(scene.following.includes(id), v => { scene.following = v ? [...scene.following, id] : scene.following.filter(x => x !== id); }));
+    r.insertCell().appendChild(check(scene.asked.includes(id), v => { scene.asked = v ? [...scene.asked, id] : scene.asked.filter(x => x !== id); }));
+    const ls = check(scene.last_spoke === id, v => { scene.last_spoke = v ? id : null; drawFacts(); }); ls.type = "radio"; ls.name = "lastspoke";
+    ls.onclick = () => { if (scene.last_spoke === id) { scene.last_spoke = null; ls.checked = false; drawFacts(); schedule(); } };
+    r.insertCell().appendChild(ls);
+  }
+}
+function check(on, set) { const c = document.createElement("input"); c.type = "checkbox"; c.checked = on; c.onchange = () => { set(c.checked); schedule(); }; return c; }
+
+// --- scoring ------------------------------------------------------------------------------------------------------
+function engines() { const e = []; if ($("engRules").checked) e.push("rules"); if ($("engModel").checked && DATA.engines.model) e.push("model"); return e.length ? e : ["rules"]; }
+function primaryResult() { if (!last) return null; return last.results.model && !last.results.model.error ? last.results.model : last.results.rules; }
+function schedule(delay = 120) { clearTimeout(timer); timer = setTimeout(score, delay); }
+async function score() {
+  try {
+    last = await api("/api/score", {scene, engines: engines(), text_only: $("textOnly").checked});
+    $("errors").textContent = "";
+    showResults(); drawFacts(); draw();
+  } catch (e) { $("errors").textContent = e.message; }
+}
+
+function verdict(ans) {
+  if (!ans) return "";
+  const ids = Object.keys(ans.addressed), top = ids.filter(i => ans.addressed[i] >= .5).map(label);
+  if (ans.unclear >= .5) return `Not clear. Could be ${ids.filter(i => ans.addressed[i] > .15).map(label).join(", ") || "anyone"}. A "Who, me?" moment.`;
+  if (ans.to_group >= .5) return `The whole group: ${top.join(", ")}.`;
+  return top.length ? `For ${top.join(" and ")}.` : "No one stands out.";
+}
+function showResults() {
+  const res = last.results, eng = Object.keys(res);
+  $("legend").innerHTML = eng.map(e => `<span><i style="background:${ENGINE_COLORS[e]}"></i>${e}${res[e].ms !== undefined ? ` ${res[e].ms.toFixed(1)} ms` : ""}</span>`).join("");
+  const p = primaryResult();
+  $("verdict").textContent = verdict(p && p.answer);
+  const errs = eng.filter(e => res[e].error).map(e => `${e}: ${res[e].error}`);
+  $("errors").textContent = errs.join("\n");
+  const t = $("bars"); t.innerHTML = "";
+  const rows = [...last.present.map(id => [label(id), e => res[e].answer && res[e].answer.addressed[id]]),
+                ["unclear", e => res[e].answer && res[e].answer.unclear], ["whole group", e => res[e].answer && res[e].answer.to_group]];
+  for (const [name, get] of rows) {
+    const r = t.insertRow(); const n = r.insertCell(); n.className = "name"; n.textContent = name;
+    if (name === "unclear" || name === "whole group") n.classList.add("muted");
+    const c = r.insertCell();
+    for (const e of eng) {
+      const v = get(e); if (v === undefined || v === null) continue;
+      const b = document.createElement("div"); b.className = "bar"; b.style.marginBottom = "2px";
+      b.innerHTML = `<span style="width:${(v * 100).toFixed(1)}%;background:${ENGINE_COLORS[e]}"></span><em>${Math.round(v * 100)}%</em>`;
+      c.appendChild(b);
+    }
+  }
+  if (last.out_of_earshot.length) { const r = t.insertRow(); const c = r.insertCell(); c.colSpan = 2; c.className = "hint"; c.textContent = "Out of earshot, left out: " + last.out_of_earshot.map(label).join(", "); }
+  $("rendered").textContent = last.rendered;
+}
+
+// --- heatmap ---------------------------------------------------------------------------------------------
+async function showHeat() {
+  $("heatGo").disabled = true; $("status").textContent = "heatmap...";
+  try { heat = await api("/api/heatmap", {scene: clone(scene), person: $("heatPerson").value, engine: $("heatEngine").value, step: .5, text_only: $("textOnly").checked}); draw(); $("status").textContent = ""; }
+  catch (e) { $("errors").textContent = e.message; $("status").textContent = ""; }
+  $("heatGo").disabled = false;
+}
+
+init().catch(e => { $("errors").textContent = e.message; });
+</script>
+</body>
+</html>

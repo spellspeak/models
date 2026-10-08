@@ -1,0 +1,116 @@
+# The people and the rooms for the example. A card is what the player can see of a person; its keys are open, so a
+# game uses its own. `near` comes from the room: a person within 1.5 m of an object gets `near: <its phrase>` on their
+# card while they stand there, replacing the card's own.
+#
+# Positions in metres, facing in degrees (0 = east, 90 = south on screen: y grows downward).
+
+cards:
+  tomas:
+    id: tomas
+    label: Tomas
+    aliases: [the barkeep]
+    features:
+      - {key: role, value: barkeep}
+      - {key: presents as, value: old man}
+      - {key: build, value: stout}
+      - {key: hair, value: "grey, tied back"}
+      - {key: headwear, value: red hat}
+      - {key: clothing, value: stained apron}
+      - {key: holding, value: a tankard}
+      - {key: doing, value: wiping the bar}
+  wren:
+    id: wren
+    label: Wren
+    features:
+      - {key: role, value: mercenary}
+      - {key: race, value: elf}
+      - {key: presents as, value: young woman}
+      - {key: hair, value: "short, black"}
+      - {key: clothing, value: leather armour}
+      - {key: carrying, value: a longbow}
+      - {key: doing, value: sharpening a knife}
+  oskar:
+    id: oskar
+    label: the old sailor
+    features:
+      - {key: role, value: sailor}
+      - {key: presents as, value: old man}
+      - {key: facial hair, value: white beard}
+      - {key: headwear, value: knitted cap}
+      - {key: marks, value: eyepatch}
+      - {key: holding, value: a pipe}
+      - {key: posture, value: sitting}
+  hale:
+    id: hale
+    label: Hale
+    aliases: [Sergeant]
+    features:
+      - {key: role, value: town guard}
+      - {key: insignia, value: city watch tabard}
+      - {key: carrying, value: a halberd}
+      - {key: posture, value: standing}
+  stranger:
+    id: stranger
+    label: the cloaked stranger
+    features:
+      - {key: race, value: hidden}
+      - {key: hair, value: hidden}
+      - {key: clothing, value: grey cloak}
+      - {key: headwear, value: hood up}
+      - {key: doing, value: nursing a drink}
+  vex:
+    id: vex
+    label: Vex
+    features:
+      - {key: role, value: dock worker}
+      - {key: cybernetics, value: chrome left arm}
+      - {key: clothing, value: orange overalls}
+      - {key: holding, value: a wrench}
+  lunn:
+    id: lunn
+    label: Officer Lunn
+    aliases: [Lunn, Officer]
+    features:
+      - {key: role, value: station security}
+      - {key: insignia, value: station security patch}
+      - {key: holding, value: a datapad}
+  medic:
+    id: medic
+    label: the medic
+    features:
+      - {key: clothing, value: white coat}
+      - {key: carrying, value: a scanner}
+      - {key: doing, value: checking a patient}
+
+scenes:
+  tavern:
+    title: The Drowned Anchor
+    room: {w: 20, h: 12}
+    player: {x: 10.0, y: 9.0, facing: -90}
+    people:
+      - {card: tomas, x: 4.0, y: 2.2, facing: 90}
+      - {card: wren, x: 10.5, y: 6.8, facing: 100}
+      - {card: oskar, x: 16.0, y: 4.0, facing: 180}
+      - {card: hale, x: 18.6, y: 10.0, facing: 200}
+      - {card: stranger, x: 2.2, y: 10.4, facing: -30}
+    objects:
+      - {name: counter, phrase: behind the counter, x: 4.0, y: 1.2}
+      - {name: fire, phrase: by the fire, x: 11.0, y: 1.0}
+      - {name: door, phrase: by the door, x: 19.2, y: 10.8}
+      - {name: corner table, phrase: at the corner table, x: 16.5, y: 3.0}
+      - {name: dark corner, phrase: in the darkest corner, x: 1.2, y: 11.2}
+    text: "You in the red hat, you lied to me."
+
+  station:
+    title: Docking ring, Kessler Station
+    room: {w: 20, h: 12}
+    player: {x: 10.0, y: 8.0, facing: -90}
+    people:
+      - {card: vex, x: 6.0, y: 4.0, facing: 45}
+      - {card: lunn, x: 12.0, y: 5.0, facing: 120}
+      - {card: medic, x: 16.0, y: 9.0, facing: 200}
+    objects:
+      - {name: airlock, phrase: by the airlock, x: 1.2, y: 6.0}
+      - {name: reactor console, phrase: at the reactor console, x: 10.0, y: 1.2}
+      - {name: infirmary, phrase: by the infirmary door, x: 18.8, y: 10.5}
+    text: "Hey, chrome arm, you know your way round a reactor?"

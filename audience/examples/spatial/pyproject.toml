@@ -1,0 +1,17 @@
+[project]
+name = "audience-spatial"
+version = "0.1.0"
+description = "Drag people around a room, type a line, see who SpellSpeak Audience thinks it is for"
+requires-python = ">=3.12"
+dependencies = [
+    "pyyaml>=6.0",
+    # Audience's reference runtime (releases/rc1/runtime)
+    "onnxruntime>=1.24",
+    "tokenizers>=0.23",
+    "numpy>=2.0",
+    "pydantic>=2.6",
+    "huggingface_hub>=0.30",  # fetches the model files when the release folder has none
+]
+
+[tool.uv]
+package = false

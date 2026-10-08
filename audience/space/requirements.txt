@@ -1,0 +1,6 @@
+# The Space installs Gradio from sdk_version in README.md. These are the versions the demo was tested with.
+onnxruntime==1.30.0
+tokenizers==0.23.2
+numpy==2.5.3
+pydantic==2.14.0
+pyyaml==6.0.3
