@@ -2,6 +2,15 @@
 
 Revisions are numbered as in the training repo (`spellspeak/model-training`, `plans/tone/PLAN.md`). The report for each is in that repo under `reports/`.
 
+## rc2 (2026-10-09)
+
+Revision r8: the move. One more output per line says what kind of move it makes in a conversation: asks, answers, hedges, doesnt_know, withholds, closes or other. A group conversation uses it to pick who speaks next. The contract becomes `line-tags-0.2`, which adds `exchange` and changes nothing from 0.1.
+
+- **How:** labels from the committee on 4,992 lines, with a guide of fourteen hard edges. Three Ettin-1B teachers labelled 113,201 more lines. The move comes from trainable copies of the encoder's top two layers and a small head. rc1's encoder and heads were frozen, so every rc1 output is unchanged, checked on 3,754 test lines.
+- **Numbers:** move macro-F1 0.812 against the labellers' 0.845. Asks or not 95.3%. Answered or still open 82.6%, against a 90% target that is not met. 9.7 ms for 8 people on four threads.
+- **Optional inputs:** every number is also scored without who a line is for and without the line before. Without who it is for, act macro-F1 falls from 0.678 to 0.571, because insults reach bystanders. Without the line before, the move's macro-F1 falls from 0.812 to 0.740.
+- **Package:** internal release `spellspeak-tone-rc2`, git tag of the same name. Repackaged for Hugging Face as `spellspeak-tone-rc2.1` with the same model files and public tag `rc2`. The card is in [releases/rc2/README.md](releases/rc2/README.md). Report `2026-10-09-linecls-r8-exchange.md`.
+
 ## rc1 (2026-10-08)
 
 Revision r7 packaged as the first release candidate and the baseline later work is compared against. Internal release `spellspeak-tone-rc1`, git tag of the same name; the model's code name in the training repo is `linecls`. First released the same day as SpellSpeak Listener (`spellspeak-listener-rc1`, the same model files) and renamed because other SpellSpeak models listen too. Card in [releases/rc1/MODEL_CARD.md](releases/rc1/MODEL_CARD.md).

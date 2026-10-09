@@ -1,0 +1,6 @@
+# SpellSpeak Audience runtime. Tested with onnxruntime 1.30.0, tokenizers 0.23.2, numpy 2.2.6, pydantic 2.13.5.
+onnxruntime>=1.24
+tokenizers>=0.23
+numpy>=2.0
+pydantic>=2.6
+huggingface_hub>=0.30  # only for example.py to fetch the model files when they are not beside it

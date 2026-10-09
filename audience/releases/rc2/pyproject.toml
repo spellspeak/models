@@ -1,0 +1,15 @@
+[project]
+name = "spellspeak-audience-rc2"
+version = "0.1.0"
+description = "SpellSpeak Audience rc2: the reference runtime and an example. Tested with onnxruntime 1.30.0, tokenizers 0.23.2, numpy 2.2.6, pydantic 2.13.5. The example fetches the model files from Hugging Face when they are not beside it"
+requires-python = ">=3.12"
+dependencies = [
+    "onnxruntime>=1.24",
+    "tokenizers>=0.23",
+    "numpy>=2.0",
+    "pydantic>=2.6",
+    "huggingface_hub>=0.30",
+]
+
+[tool.uv]
+package = false
