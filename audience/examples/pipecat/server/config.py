@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 HERE = Path(__file__).resolve().parent
 EXAMPLE = HERE.parent
 load_dotenv(EXAMPLE / ".env", override=False)  # before anything below reads the environment
-# The repo's own .env too, for HF_TOKEN: the model files on Hugging Face are private for now.
+# The repo's own .env too, for HF_TOKEN if one is set there.
 load_dotenv(EXAMPLE.parent.parent.parent / ".env", override=False)
 
 # --- SpellSpeak Audience -------------------------------------------------------------------------

@@ -37,8 +37,7 @@ session with it).
 
 Audience's model files (`encoder.onnx`, `head.onnx`, `tokenizer.json`, `config.json`) are read from
 `audience/releases/rc1/` when they're there. In a git checkout they aren't, so the bot downloads them
-once from Hugging Face (`spellspeak/audience`, revision `rc1`) when it starts. The repo is private
-for now: set `HF_TOKEN` (in this `.env` or the repo's own) or run `hf auth login`. If the model can't
+once from Hugging Face (`spellspeak/audience`, revision `rc1`) when it starts. If the model can't
 be loaded, the bot routes with the runtime's rules baseline (it says so in the log and on screen),
 which handles names and descriptions but not vague lines.
 

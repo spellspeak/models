@@ -2,7 +2,7 @@
 
 AI characters in real-time, multi-party conversation need a structured reading of each utterance to update their expressions and relationships. The language model voicing a character could produce it, but only through extra output tokens, training or tool calls. That adds latency to every turn, takes capacity from the dialogue, risks malformed output, and repeats the work for each character in the scene.
 
-SpellSpeak Tone treats the reading as multi-task classification by a separate small model. One pass over an utterance predicts the speaker's emotion and the social act directed at each person present, with a hostility probability per person. It is built for millisecond inference on a CPU, unstructured user input, and rare false hostility. It was trained on game dialogue and natural player speech. It is not for moderation or for judging real people.
+SpellSpeak Tone treats the reading as multi-task classification by a separate small model. One pass over an utterance predicts the speaker's emotion and the social act directed at each person present, with a hostility probability per person. It is built for millisecond inference on a CPU, unstructured user input, and rare false hostility. It was trained on dialogue from games and fiction and on natural user speech. It is not for moderation or for judging real people.
 
 - **In:** the line, the line before it, who speaks, who it is to, everyone present (up to 8 people).
 - **Out, per line:** an emotion with intensity and confidence, and whether the line is only a listening sound.

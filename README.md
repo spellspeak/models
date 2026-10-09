@@ -1,8 +1,8 @@
 # spellspeak
 
-Models for interactive, conversational AI.
+Models for multi-character voice experiences.
 
-They are small and fast, built to run beside a live conversation rather than in a data centre. Each one does one job well: reading how a line was said, working out who it was said to, or speaking as a character. They answer in milliseconds on a CPU or a modest GPU, so a game character, a companion, an assistant or a device can respond like a person in the room. They run locally, inside the application that uses them.
+They are small and fast, built to run beside a live conversation rather than in a data centre. Each one does one job well: reading how a line was said, working out who it was said to, or speaking as a character. They answer in milliseconds on a CPU or a modest GPU, so when several AI characters share one conversation, in an interactive story, a game or a voice app, each can respond like a person in the room. They run locally, inside the application that uses them.
 
 Each model has a folder here: what it does, a model card for every release, its licence, demos and examples. Weights live on Hugging Face. Every release has a manifest listing its files with checksums, so a download can be checked against what was tested.
 

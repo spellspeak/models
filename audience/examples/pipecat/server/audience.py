@@ -117,7 +117,7 @@ def card(c: Character) -> PersonCard:
 
 def model_dir() -> Path:
     """Where the model files are: the release folder if it has them, else Hugging Face's cache,
-    downloading them the first time (the repo is private for now: HF_TOKEN, or `hf auth login`)."""
+    downloading them the first time."""
     if all((AUDIENCE_DIR / f).exists() for f in MODEL_FILES):
         return AUDIENCE_DIR
     from huggingface_hub import snapshot_download

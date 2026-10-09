@@ -16,7 +16,7 @@ short_description: Who is a line for when several characters are listening?
 
 # SpellSpeak Audience demo
 
-Try [SpellSpeak Audience](https://huggingface.co/spellspeak/audience) in the browser. Pick a room, choose where the player looks and who they were just talking with, and type a line. The model answers twice: with the spatial facts a game would send, and from the words alone.
+Try [SpellSpeak Audience](https://huggingface.co/spellspeak/audience) in the browser. Pick a room, choose where the player looks and who they were just talking with, and type a line. The model answers twice: with the spatial facts an application would send, and from the words alone.
 
 - `app.py`: the demo, in Gradio.
 - `scene.py` and `scenes.yaml`: the rooms, from the [spatial example](https://github.com/spellspeak/models/tree/main/audience/examples/spatial) in spellspeak/models. Positions become the facts the model reads through the runtime's `bands` function.
