@@ -4,42 +4,51 @@ When several AI characters listen to the same person, as in a game, an interacti
 
 SpellSpeak Audience treats the question as classification by a separate small model. One pass reads the line, who said it, a card for each person who might be addressed (what the speaker can see of them) and, when the application knows it, where each one stands. It returns how likely the line is to be for each character, whether the evidence leaves it unclear, and whether the line is for the whole group. It scores and the application decides. It is built for millisecond inference on a CPU, typed or transcribed speech, and an honest "unclear": a character can ask "Who, me?" instead of taking offence at a line that may not have been meant for them.
 
-**Try it in your browser:** [the demo on Hugging Face](https://huggingface.co/spaces/spellspeak/audience-demo). Weights: [spellspeak/audience](https://huggingface.co/spellspeak/audience).
+**Try it in your browser:** [the demo on Hugging Face](https://huggingface.co/spaces/spellspeak/audience-demo). Weights: [spellspeak/audience](https://huggingface.co/spellspeak/audience), tags `rc2.1`, `rc2` and `rc1`.
 
 The runtime calls the human in the conversation the player. Everyone who might be addressed gets a card. When a character speaks, the player is one of them.
 
 - **In:** the line and the line before it, and who said it: the player or a character; a card per person who might be addressed (up to 8): a label, aliases and open `key: value` features; optionally, per person and from the speaker's place, how far away they are, whether the speaker is looking at them, whether they are in the speaker's group, and who spoke to whom.
 - **Out, per person:** the probability that the line is for them.
 - **Out, per line:** `unclear` (it could be for several people, so nobody should take it personally yet) and `to_group` (it is for everyone the speaker is talking with, or for everyone who can hear a question to the room).
-- **Size and speed:** about 33M parameters, 135 MB ONNX in two graphs, about 6 ms per line on four CPU threads. Each person's card is encoded once and cached.
+- **Size and speed:** about 33M parameters. Full precision is 131.7 MB in two graphs. From rc2.1 there is also a 16-bit copy of 66.0 MB with the same answers. About 6 ms per line on four CPU threads. Each person's card is encoded once and cached.
 - **Runtime:** ONNX Runtime on CPU. A Python reference runtime ships with each release. It includes the function that turns positions and facings into the facts the model reads, and an instant rules baseline.
 
 ## Releases
 
 | Release | Date | Card | Weights | Internal name |
 |---|---|---|---|---|
+| [rc2.1](releases/rc2.1/) | 2026-10-09 | [README.md](releases/rc2.1/README.md) | [spellspeak/audience](https://huggingface.co/spellspeak/audience), tag `rc2.1` | `spellspeak-audience-rc2.2` in `spellspeak/model-training` (git tag of the same name; code name `addr`, revision r3) |
 | [rc2](releases/rc2/) | 2026-10-09 | [README.md](releases/rc2/README.md) | [spellspeak/audience](https://huggingface.co/spellspeak/audience), tag `rc2` | `spellspeak-audience-rc2.1` in `spellspeak/model-training` (git tag of the same name; code name `addr`, revision r3) |
 | [rc1](releases/rc1/) | 2026-10-08 | [README.md](releases/rc1/README.md) | [spellspeak/audience](https://huggingface.co/spellspeak/audience), tag `rc1` | `spellspeak-audience-rc1.2` in `spellspeak/model-training` (git tag of the same name; code name `addr`, revision r2) |
 
 A release folder here holds everything in the release except the model files. Its `MANIFEST.json` lists every file, model files included, with its size and sha256, so a download can be checked against what was tested. The card is the folder's `README.md`, the same file that is the model card on Hugging Face.
 
-### What changed in rc2, and why
+### What changed in rc2.1, and why
 
-rc1 knew only the player as a speaker. In a group conversation that is not enough: the characters answer each other, and the application needs to know who each of their lines is for to pass the turn on. And a question asked of the room, "Who knows where the mill key is?", should reach everyone who can hear it, so whoever knows can answer.
+rc2.1 adds a 16-bit copy of rc2's model beside the full-precision files, so a download can be half the size, for example where an application ships the model to a browser or a phone. Full precision is unchanged, byte for byte. It stays the default and the reference: keep it for any further training.
 
-- **Questions to the room** go to everyone who can hear them, whoever the speaker is looking at. With the speaker facing one person, rc2 gets all 63 test lines right, with the spatial facts and without them. rc1 sent most of them to the one person looked at: 27% right with the facts, 84% without.
-- **Lines said by characters.** A request can name a character as the speaker. The player is then one of the people the line can be said to, with a card of what the characters see of them. A character's line goes to the one it was answering, unless its words pick someone else out. rc2 gets 97% of such test lines right with the facts and 98% without. rc1, which was never trained on them, gets 87% and 90%.
-- **Player lines read as before.** Line by line on rc1's own test lines, rc2 is as good as rc1, with the facts and without them. Lines that should be unclear are caught more often: 92% with the facts and 95% without, from 88% and 92%.
+- **Half the download, the same answers.** `encoder_fp16.onnx` and `head_fp16.onnx` hold the same weights in 16 bits: 66.0 MB against 131.7 MB.
+  - Their answers read as full precision's on 99.92% of the test lines, with the spatial facts and without them. The other two lines only change which of several tied people is on top.
+  - No scorecard item is worse, and confidently wrong answers stay at 0.69% and 0.45%.
+- **The same memory and speed.** The weights become 32-bit when they load, so the model uses what full precision uses (364 MB against 370 MB resident) and runs as fast.
+- **Ask for it.** Use `load_classifier(folder, precision="fp16")` or `python example.py --fp16`. Without that, everything reads full precision, as before.
 
-Spatial facts are optional, so every number on the card is measured twice on the same lines: with the facts and with every fact removed. The rc2 runtime also runs rc1's model files unchanged.
+Lower precisions were tried too, and none ships:
+- int8 weights (36 MB) change the top person among tied people and one calibration item;
+- 4-bit weights (24 MB) change about one answer in ten;
+- whole-graph dynamic int8 breaks the model.
+
+rc2's changes, questions to the room and lines said by characters, are in the [CHANGELOG](CHANGELOG.md).
 
 ## Try it
 
-The release folder holds the Python reference runtime (`runtime/`: the person card and request types, the input rendering, the rules of evidence, the rules baseline, the classifier and the positions-to-facts function) and an example. The example fetches the four model files (`encoder.onnx`, `head.onnx`, `tokenizer.json`, `config.json`) from Hugging Face the first time, unless they are already in the folder:
+The release folder holds the Python reference runtime (`runtime/`: the person card and request types, the input rendering, the rules of evidence, the rules baseline, the classifier and the positions-to-facts function) and an example. The first time, the example fetches from Hugging Face the model files its precision needs, unless they are already in the folder. Full precision needs `encoder.onnx` and `head.onnx`, and `--fp16` needs `encoder_fp16.onnx` and `head_fp16.onnx`. Both need `tokenizer.json` and `config.json`.
 
 ```bash
-cd audience/releases/rc2
-uv run example.py
+cd audience/releases/rc2.1
+uv run example.py            # full precision, the default
+uv run example.py --fp16     # the 16-bit files: half the download
 ```
 
 The example puts a barkeep, an elf mercenary and an old sailor in a room, with the player facing the elf. It asks who four of the player's lines are for, with and without the spatial facts. Then the barkeep speaks, after the player asked him where the mill key is:
@@ -56,6 +65,8 @@ The example puts a barkeep, an elf mercenary and an old sailor in a room, with t
 Tomas: 'No idea, sorry.'               text only   player (1.00)
 Tomas: 'Wren, were you there?'         text only   wren (1.00)
 ```
+
+With `--fp16` it prints the same lines.
 
 The runtime is for inference and for building on the model. It shows exactly how a line, the cards and the facts become the model's input, and how the scores come back. Training code and data stay in `spellspeak/model-training`.
 

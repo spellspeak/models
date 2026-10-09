@@ -2,6 +2,18 @@
 
 Revisions are numbered as in the training repo (`spellspeak/model-training`, `plans/tone/PLAN.md`). The report for each is in that repo under `reports/`.
 
+## rc2.1 (2026-10-09)
+
+A smaller file beside full precision, for developers who want the smaller download. `model_fp16.onnx` is rc2's model with its weights stored in 16 bits. rc2's full-precision files are unchanged, byte for byte, and stay the default and the reference for any further training. Internal release `spellspeak-tone-rc2.2`, git tag of the same name, packaged once for Hugging Face with public tag `rc2.1`.
+
+- **The 16-bit file:** 55.7 MB against 111.1 MB. The same tags as full precision on all but one line in a column, no scorecard number moved beyond noise, and calibration error within 0.0012. It computes in 32 bits: 10.0 ms against 9.9 for 8 people on four threads, and no memory saved.
+- **Measured with and without the optional inputs:** in all four columns (as given, without who a line is for, without the line before, without either), on 5,204 test lines.
+- **Tried and not shipped:** 8-bit and 4-bit weights, which changed tags or moved scorecard numbers beyond noise, and computing in 16 bits, which was slower on a CPU.
+- **Runtime and example:** `LineClassifier(folder, precision="fp16")` and `example.py --fp16`. Without them, everything runs as in rc2.
+- **Package:** the card is in [releases/rc2.1/README.md](releases/rc2.1/README.md).
+
+Report `2026-10-09-linecls-precision.md`.
+
 ## rc2 (2026-10-09)
 
 Revision r8: the move. One more output per line says what kind of move it makes in a conversation: asks, answers, hedges, doesnt_know, withholds, closes or other. A group conversation uses it to pick who speaks next. The contract becomes `line-tags-0.2`, which adds `exchange` and changes nothing from 0.1.

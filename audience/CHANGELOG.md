@@ -2,6 +2,24 @@
 
 Revisions are numbered as in the training repo (`spellspeak/model-training`, `plans/addressee/`). The report for each is in that repo under `reports/`.
 
+## rc2.1 (2026-10-09)
+
+rc2's model at a second precision, beside the first: `spellspeak-audience-rc2.2`, git tag of the same name, public tag `rc2.1`. The full-precision files are rc2's, byte for byte, and stay the default and the reference. Card in [releases/rc2.1/README.md](releases/rc2.1/README.md).
+
+- **16-bit files:** `encoder_fp16.onnx` and `head_fp16.onnx` hold the same weights stored in 16 bits, cast to 32 bits when they load: 66.0 MB against 131.7 MB.
+  - Their answers read as full precision's on 99.92% of the test lines, with the spatial facts and without them.
+  - No scorecard item is worse. A difference counts when it is 0.1 points or more on a set of 30 lines or more.
+  - Memory and speed are full precision's.
+- **Tried, not shipped:**
+  - 16-bit compute shifts calibration;
+  - int8 weights change the top person among tied people, and one calibration item;
+  - 4-bit weights read as full precision's on only 90% and 86% of lines;
+  - whole-graph dynamic int8 breaks the model.
+- **Runtime and example:** `load_classifier(..., precision="fp16")` and `example.py --fp16`. Without them, full precision, as before. The runtime gives rc1's and rc2's files the same answers as their own runtimes do.
+- **Measurement:** the test's spatial facts drawn the way an application makes them no longer depend on Python's hash seed. Only that set changed: its confidently-wrong share moved from 0.81% to 0.77%.
+
+Reports `2026-10-09-addr-precision.md`, with rc2's `2026-10-09-addr-r3.md`.
+
 ## rc2 (2026-10-09)
 
 Revision r3 packaged as the second release candidate: `spellspeak-audience-rc2.1`, git tag of the same name. The model was trained at git tag `spellspeak-audience-rc2`; its first package carried an earlier card and was never published. Card in [releases/rc2/README.md](releases/rc2/README.md).

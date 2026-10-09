@@ -22,6 +22,8 @@ audience/releases/*/encoder.onnx
 audience/releases/*/head.onnx
 audience/releases/*/tokenizer.json
 audience/releases/*/config.json
+audience/releases/*/encoder_fp16.onnx
+audience/releases/*/head_fp16.onnx
 audience/space/release/
 *.tsbuildinfo
 

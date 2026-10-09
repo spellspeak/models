@@ -1,0 +1,130 @@
+"""SpellSpeak Tone at run time: ONNX Runtime on the CPU, no torch.
+
+A model folder holds `model.onnx` (encoder and heads in one graph; inputs input_ids, attention_mask and the
+per-person marker masks; outputs the five heads' logits), `tokenizer.json` and `config.json` (class lists, the
+hostility threshold tau, max length).
+
+One encoder pass per line, whatever the number of people. The act toward each person is read at that person's
+marker. The operating point is shared with the scorecard (harness/expression/decide.py): a pair is hostile exactly when
+its hostility probability reaches tau (an invented grudge costs more than a miss).
+
+r8 (line-tags-0.2): a model whose graph has an `exchange` output and whose config lists `exchanges` also returns the
+line's exchange move (asks, answers, hedges, doesnt_know, withholds, closes, other) with its confidence, as
+`LineTags02`. A model without it (RC1) returns `LineTags` exactly as before.
+
+Precision: full precision ("fp32") is the default and the reference. From release rc2.1 a folder may also hold
+`model_fp16.onnx`, the same graph with its weights stored in 16 bits (half the size, computed in 32 bits), picked with
+`precision="fp16"`.
+"""
+from __future__ import annotations
+
+import json
+import pathlib
+import time
+
+from contracts.schemas.line_tags import ActTag, ExchangeTag, LineInput, LineTags, LineTags02, is_hostile
+from harness.expression.calibrate import emotion_confidence, exchange_confidence, tag_confidence
+from harness.expression.decide import decide, summed_hostility
+from harness.expression.render import render, span_mask
+
+
+PRECISIONS = ("fp32", "fp16")
+FP16_FILE = "model_fp16.onnx"
+
+
+class LineClassifier:
+    def __init__(self, model_dir: str | pathlib.Path, onnx_file: str | None = None, threads: int = 4, precision: str = "fp32"):
+        """`precision` picks the graph. "fp32" (the default): the transformer optimizer's graph when the export has one
+        (r3 on: same outputs, a little faster), else the plain graph. "fp16": `model_fp16.onnx`, the weights stored in
+        16 bits. `onnx_file` names a graph directly and overrides `precision`."""
+        import onnxruntime as ort
+        from tokenizers import Tokenizer
+
+        if precision not in PRECISIONS:
+            raise ValueError(f"precision must be one of {PRECISIONS}, not {precision!r}")
+        d = pathlib.Path(model_dir)
+        if onnx_file is None and precision == "fp16":
+            if not (d / FP16_FILE).exists():
+                raise FileNotFoundError(f"precision='fp16' needs {FP16_FILE} in {d}. It ships with release rc2.1 and later; "
+                                        "download it, or use precision='fp32'")
+            onnx_file = FP16_FILE
+        onnx_file = onnx_file or ("model.opt.onnx" if (d / "model.opt.onnx").exists() else "model.onnx")
+        self.onnx_file = onnx_file
+        self.precision = precision
+        self.config = json.loads((d / "config.json").read_text())
+        self.tok = Tokenizer.from_file(str(d / "tokenizer.json"))
+        self.tok.enable_truncation(self.config["max_len"])
+        self.tok.no_padding()
+        so = ort.SessionOptions()
+        so.intra_op_num_threads = threads
+        so.inter_op_num_threads = 1
+        self.sess = ort.InferenceSession(str(d / onnx_file), so, providers=["CPUExecutionProvider"])
+        self.acts = self.config["acts"]
+        self.calibration = self.config.get("calibration")  # r7: reported confidences mean what they say
+        self.emotions = self.config["emotions"]
+        self.intensities = self.config["intensities"]
+        self.tau = float(self.config["tau"])
+        outputs = [o.name for o in self.sess.get_outputs()]
+        # r8: the exchange head, when the graph has it; RC1's graph does not
+        self.exchanges = self.config.get("exchanges") if "exchange" in outputs else None
+        self._exchange_at = outputs.index("exchange") if self.exchanges else None
+
+    def logits(self, inp: LineInput):
+        """Raw outputs for one line: emotion, emotion intensity, act per person, act intensity per person, backchannel."""
+        import numpy as np
+
+        text, spans = render(inp.model_dump())
+        enc = self.tok.encode(text)
+        ids = np.asarray([enc.ids], dtype=np.int64)
+        mask = np.asarray([enc.attention_mask], dtype=np.int64)
+        smask = np.asarray(span_mask(list(enc.offsets), spans), dtype=np.float32)
+        return self.sess.run(None, {"input_ids": ids, "attention_mask": mask, "span_mask": smask})
+
+    def tag(self, inp: LineInput) -> LineTags:
+        import numpy as np
+
+        def softmax(x):
+            e = np.exp(x - x.max(-1, keepdims=True))
+            return e / e.sum(-1, keepdims=True)
+
+        out = self.logits(inp)
+        le, lei, la, lai, lb = out[:5]
+        p_host = 1 / (1 + np.exp(-out[5])) if len(out) > 5 else None  # the hostility head (every released model has one)
+        pe, pei, pa, pai = softmax(le[0]), softmax(lei[0]), softmax(la), softmax(lai)
+        emo = self.emotions[int(pe.argmax())]
+        if float(softmax(lb[0])[1]) >= 0.5:  # a backchannel is not a turn: no act toward anyone
+            return self._with_exchange(LineTags(
+                emotion=emo, emotion_intensity="low" if emo == "neutral" else self.intensities[int(pei.argmax())],
+                emotion_confidence=round(emotion_confidence(float(pe.max()), self.calibration), 4),
+                acts={t: ActTag(act="none") for t in inp.targets}, backchannel=True), out)
+        acts = {}
+        for i, t in enumerate(inp.targets):
+            ph = float(p_host[i]) if p_host is not None else summed_hostility(pa[i])
+            act, inten = decide(pa[i], ph, self.tau, self.intensities[int(pai[i].argmax())])
+            # The confidence is the probability the decision rests on: for a hostile act, the hostility score (the
+            # act's own class can sit under 0.5 while the line is clearly hostile); otherwise the act's probability.
+            hostile = is_hostile(act, inten)
+            conf = ph if hostile else float(pa[i][self.acts.index(act)])
+            acts[t] = ActTag(act=act, intensity=inten, confidence=round(tag_confidence(conf, hostile, self.calibration), 4))
+        return self._with_exchange(LineTags(
+            emotion=emo, emotion_intensity="low" if emo == "neutral" else self.intensities[int(pei.argmax())],
+            emotion_confidence=round(emotion_confidence(float(pe.max()), self.calibration), 4), acts=acts, backchannel=False), out)
+
+    def _with_exchange(self, tags: LineTags, out) -> LineTags:
+        """RC1 and any model without the exchange head: the tags unchanged. r8 on: the same tags plus the exchange move."""
+        if self.exchanges is None:
+            return tags
+        import numpy as np
+
+        z = np.asarray(out[self._exchange_at][0], dtype=np.float64)
+        p = np.exp(z - z.max())
+        p /= p.sum()
+        i = int(p.argmax())
+        conf = round(exchange_confidence(float(p[i]), self.calibration), 4)
+        return LineTags02(**{k: getattr(tags, k) for k in type(tags).model_fields},
+                          exchange=ExchangeTag(label=self.exchanges[i], confidence=conf))
+
+    def timed(self, inp: LineInput) -> tuple[LineTags, float]:
+        t = time.perf_counter()
+        out = self.tag(inp)
+        return out, (time.perf_counter() - t) * 1000
