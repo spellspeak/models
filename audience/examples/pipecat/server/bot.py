@@ -1,19 +1,19 @@
-"""Four agents in one bot, and SpellSpeak Audience deciding which of them each user turn is for.
+"""Four characters in a neon garage, and SpellSpeak Audience deciding who each of your turns is for.
 
-    uv run bot.py -t webrtc          # the Pipecat dev runner, on http://localhost:7860
+    uv run bot.py -t daily          # the dev runner: /start on http://localhost:7860
 
-Five workers share one runner and its bus (`director.py` has the details):
+The room, and a worker per character, share one runner and its bus:
 
-    room                  transport → Deepgram Flux → Hearing → user aggregator → Router → CastBridge
-                          → Deepgram TTS → transport → Playback → assistant aggregator
-    maya, theo, juno, otto  an agent each: OpenAI with their prompt, active only on their turns
+    room                     transport → Flux → Hearing → user aggregator → Router → CastBridge
+                             → FloorGate → transport → FloorEar
+    nova, bruno, atlas, kai  a CharacterWorker each: OpenAI with their prompt → Aura-2 in their voice
 
-At the start of each answer, Audience reads who the user's turn was for (`audience.py`): one agent,
-everyone, or unclear. The director hands the turn to that agent with the whole conversation (or to
-everyone in turn, or has the likeliest ask "Who, me?"), and the bridge switches the TTS to their
-voice. Deepgram does both ends: Flux hears the user and decides when their turn ends, and Aura-2
-speaks for every agent. The client can say who the user is looking at (`look`), which Audience reads too. The session
-ends when the client leaves.
+Each character's voice plays on its own Daily audio track (a transport destination each), so they
+can talk at once: "hey, all of you!" gets everyone answering together, "oi, you!" gets everyone it
+might have been for asking "Who, me?". Audience reads every turn (`audience.py`), the director
+plays out the plan (`director.py`), and the floor decides when each line plays (`floor.py`). The
+client can say who the user is looking at (`look`), which Audience reads as gaze. The session ends
+when the client leaves.
 """
 
 from __future__ import annotations
@@ -22,27 +22,29 @@ import asyncio
 import os
 import sys
 import threading
+import uuid
 
 from loguru import logger
-from pipecat.frames.frames import InputAudioRawFrame
+from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.worker import PipelineParams, PipelineWorker
 from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.aggregators.llm_response_universal import (
-    AssistantTurnStoppedMessage,
-    LLMContextAggregatorPair,
+    LLMUserAggregator,
     LLMUserAggregatorParams,
 )
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import create_transport
-from pipecat.transports.base_transport import BaseTransport, TransportParams
+from pipecat.transports.base_transport import BaseTransport
+from pipecat.transports.daily.transport import DailyParams
 from pipecat.workers.runner import WorkerRunner
 
 import services
 from audience import Audience
-from cast import AgentWorker, prompt
-from config import ROOM, Settings, load_cast
-from director import CastBridge, Director
+from cast import CharacterWorker, prompt
+from config import ROOM, Settings, load_cast, require
+from director import Director
+from floor import CastBridge
 
 CAST = load_cast()
 
@@ -55,51 +57,52 @@ def shared_audience(settings: Settings) -> Audience:
     The dev runner loads it at startup, so a first download never holds up a session."""
     global _audience
     with _audience_lock:
-        if _audience is not None:
-            return _audience
-        _audience = Audience(
-            CAST, engine=settings.audience_engine, threads=settings.audience_threads
-        )
-    return _audience
+        if _audience is None:
+            _audience = Audience(
+                CAST, engine=settings.audience_engine, threads=settings.audience_threads
+            )
+        return _audience
 
 
 TRANSPORT_PARAMS = {
-    "webrtc": lambda: TransportParams(audio_in_enabled=True, audio_out_enabled=True),
+    # A custom audio track per character, named by their id; no default microphone track.
+    "daily": lambda: DailyParams(
+        audio_in_enabled=True,
+        audio_out_enabled=True,
+        audio_out_destinations=[c.id for c in CAST],
+        microphone_out_enabled=False,
+        camera_out_enabled=False,
+    ),
 }
 
 
 async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> None:
     settings = Settings.from_env()
+    ids = [c.id for c in CAST]
     runner = WorkerRunner(handle_sigint=runner_args.handle_sigint)
     audience = await asyncio.to_thread(shared_audience, settings)
     director = Director(CAST, audience)
 
-    context = LLMContext()
-    aggregators = LLMContextAggregatorPair(
-        # No turn strategies here: Flux recommends its own, so it decides when the user's turn ends.
-        context,
-        user_params=LLMUserAggregatorParams(),
-    )
-    bridge = CastBridge(
-        director,
-        voice=CAST[0].voice,
-        bus=runner.bus,
-        worker_name=ROOM,
-        exclude_frames=(InputAudioRawFrame,),  # the microphone's audio stays in the room
-        name="CastBridge",
+    user = LLMUserAggregator(
+        LLMContext(),
+        params=LLMUserAggregatorParams(
+            # Not for turns (Flux decides those): the director hears from it when the user's
+            # voice starts and stops, so that no line starts over them.
+            vad_analyzer=SileroVADAnalyzer(),
+            user_turn_strategies=services.turn_strategies(),
+        ),
     )
     pipeline = Pipeline(
         [
             transport.input(),
             services.stt(settings, CAST),
             director.hearing(),
-            aggregators.user(),
+            user,
             director.router(),
-            bridge,
-            services.tts(settings, CAST[0].voice),
+            CastBridge(ids, bus=runner.bus, worker_name=ROOM),
+            director.floor.gate(),
             transport.output(),
-            director.playback(),
-            aggregators.assistant(),
+            director.floor.ear(),
         ]
     )
     room = PipelineWorker(
@@ -110,17 +113,14 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     )
     director.worker = room
 
-    @aggregators.assistant().event_handler("on_assistant_turn_stopped")
-    async def on_assistant_turn_stopped(aggregator, message: AssistantTurnStoppedMessage):
-        director.spawn(director.line_spoken(message.content, message.interrupted), "line")
-
-    # Everyone says hello once the client is listening and every worker has started.
+    # The client is told who's here once it's listening and every worker has started. Nobody
+    # speaks until the user does.
     ready: set[str] = set()
 
     async def ready_for(what: str) -> None:
         ready.add(what)
         if ready == {"client", "workers"}:
-            await director.welcome()
+            await director.send_cast()
 
     @room.rtvi.event_handler("on_client_ready")
     async def on_client_ready(rtvi):
@@ -128,10 +128,10 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
 
     @room.rtvi.event_handler("on_client_message")
     async def on_client_message(rtvi, message):
-        """`look`: who the user is looking at ({"agent": id}, or null for nobody)."""
+        """`look`: who the user is looking at ({"character": id}, or null for nobody)."""
         if message.type == "look" and isinstance(message.data, dict):
-            agent = message.data.get("agent")
-            await director.look(str(agent) if agent else None)
+            who = message.data.get("character")
+            await director.look(str(who) if who else None)
 
     @runner.event_handler("on_ready")
     async def on_ready(runner):
@@ -146,7 +146,8 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
         logger.info("Session: client left")
         await runner.cancel()
 
-    # However the room ends, the agents go with it.
+    # However the room ends, the characters go with it: they'd otherwise keep their LLM and TTS
+    # connections open for good.
     @room.event_handler("on_pipeline_finished")
     async def on_pipeline_finished(worker, frame):
         await runner.cancel()
@@ -157,7 +158,12 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     )
     try:
         await runner.add_workers(
-            *(AgentWorker(c, services.llm(settings, prompt(c, CAST))) for c in CAST),
+            *(
+                CharacterWorker(
+                    c, services.llm(settings, prompt(c, CAST)), services.tts(settings, c)
+                )
+                for c in CAST
+            ),
             room,
         )
         await runner.run()
@@ -167,12 +173,37 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
 
 
 async def bot(runner_args: RunnerArguments) -> None:
-    """The dev runner's entry point: one session per client."""
-    if not getattr(getattr(runner_args, "cli_args", None), "verbose", 0):
-        logger.remove()
-        logger.add(sys.stderr, level=os.getenv("BOT_LOG_LEVEL", "INFO").upper())
-    transport = await create_transport(runner_args, TRANSPORT_PARAMS)
-    await run_bot(transport, runner_args)
+    """The entry point (the dev runner's): one session per client. Every log line of the session
+    carries its id."""
+    configure_logging(verbose=bool(getattr(getattr(runner_args, "cli_args", None), "verbose", 0)))
+    session = (getattr(runner_args, "session_id", None) or uuid.uuid4().hex)[:8]
+    with logger.contextualize(session=session):
+        transport = await create_transport(runner_args, TRANSPORT_PARAMS)
+        await run_bot(transport, runner_args)
+
+
+_logging_configured = False
+
+
+def configure_logging(*, verbose: bool) -> None:
+    """Once per process: BOT_LOG_LEVEL (INFO by default; DEBUG adds what was said), with the
+    session id on every line."""
+    global _logging_configured
+    if _logging_configured:
+        return
+    _logging_configured = True
+    logger.configure(extra={"session": "-"})
+    if verbose:
+        return
+    logger.remove()
+    logger.add(
+        sys.stderr,
+        level=os.getenv("BOT_LOG_LEVEL", "INFO").upper(),
+        format=(
+            "<green>{time:HH:mm:ss.SSS}</green> | <level>{level: <7}</level> | "
+            "<cyan>{extra[session]}</cyan> | {name}:{line} - <level>{message}</level>"
+        ),
+    )
 
 
 if __name__ == "__main__":
@@ -182,5 +213,6 @@ if __name__ == "__main__":
 
     os.environ.update(configured)
     settings = Settings.from_env()  # a missing key fails now, not when the first client connects
+    require("DAILY_API_KEY")  # the dev runner makes a Daily room per session with it
     shared_audience(settings)  # the model (downloaded the first time) before anyone connects
     main()

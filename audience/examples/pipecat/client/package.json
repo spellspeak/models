@@ -10,9 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@daily-co/daily-js": "^0.90.0",
     "@pipecat-ai/client-js": "^1.13.1",
     "@pipecat-ai/client-react": "^1.8.2",
-    "@pipecat-ai/small-webrtc-transport": "^1.10.8",
+    "@pipecat-ai/daily-transport": "^1.6.9",
     "@tailwindcss/vite": "^4.3.3",
     "lucide-react": "^1.53.0",
     "react": "^19.3.0",

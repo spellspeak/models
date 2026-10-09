@@ -1,74 +1,74 @@
-"""`Director`: who answers each user turn, and the processors that let it hear and steer.
+"""`Director`: who speaks next in the room, and the processors that let it hear and steer.
 
-The room worker's pipeline, and where the director sits in it:
+The room worker's pipeline:
 
-    transport → STT → Hearing → user aggregator → Router → CastBridge → TTS → transport → Playback
-                                                                               → assistant aggregator
+    transport.input → Flux → Hearing → user aggregator → Router → CastBridge → FloorGate
+                    → transport.output → FloorEar
 
-- `Hearing` passes the user's words, partial and final, to the director as they are heard. Audience
-  reads them as they come (a few ms each), so the client can watch the reading change mid-sentence.
-- `Router` takes each finished user turn (the aggregator's `LLMContextFrame`) out of the stream. At
-  the start of the turn's answer, the director asks Audience who it was for and hands the turn to
-  that agent (or to everyone, one after the other) by activating their worker with their view of
-  the conversation.
-- `CastBridge` is the bus bridge: the agents' lines come back through it, and it switches the TTS to
-  the voice of whoever is speaking, in-band, just before their line.
-- `Playback` watches the bot start and stop speaking: the client is told whose voice is playing,
-  and when several agents answer, each waits for the one before to finish playing.
-- The assistant aggregator's `on_assistant_turn_stopped` tells the director what was actually said
-  (cut short if interrupted), and the next agent in line, if any, answers.
+- `Hearing` passes the user's words, partial and final, to the director as they are heard, and
+  Audience reads them as they come (a few ms each), so the client can watch the reading change
+  mid-sentence. It also passes on when the user's voice starts and stops (the VAD), so that no
+  line starts over them.
+- `Router` takes each finished user turn (the aggregator's `LLMContextFrame`) out of the stream:
+  the director asks Audience who it was for, and plays out the plan (`audience.plan`).
+- `CastBridge`, `FloorGate` and `FloorEar` are the floor (`floor.py`): the characters' voices
+  come in over the bus, and each line plays when its turn comes, on its speaker's own track.
 
-The agents never talk to each other: only the user's turns are routed.
+Each line is a *take*: a `speak` job sent to the character's worker (`cast.py`) with their view of
+the conversation, and a cue on the floor saying what it waits for. A chorus (everyone at once, or
+everyone it might have been for asking "Who, me?") is staggered over a second; answers in turn each
+wait for the one before, plus a beat. The worker reports the line as soon as it's written, while
+its TTS is still voicing it, and the next in turn is asked for once the line before has started
+playing: written and voiced while this one plays, so it comes in a beat after it ends.
+
+The user always has the floor when they take it: speaking (past a couple of words, so a laugh
+doesn't count) or typing cancels every take still to come and stops every voice.
 
 Everything goes to the client as RTVI server messages: `cast`, `audience` (each reading, and for a
-whole turn the route it led to), `turn` (who has the floor and why), `speaker` (whose voice is
-playing) and `line` (the transcript).
+whole turn its plan), `turn` (a take: who and why), `line` (the transcript, as each line starts
+playing, and again if it's cut short or taken back) and `voices` (whose audio is playing).
 """
 
 from __future__ import annotations
 
 import asyncio
+import itertools
+import random
 import time
+from collections import deque
+from collections.abc import Sequence
+from dataclasses import dataclass, field
 from typing import Any
 
 from loguru import logger
-from pipecat.bus import BusBridgeProcessor
-from pipecat.bus.messages import BusFrameMessage, BusMessage
 from pipecat.frames.frames import (
-    BotStartedSpeakingFrame,
-    BotStoppedSpeakingFrame,
     Frame,
     InterimTranscriptionFrame,
     LLMContextFrame,
-    LLMFullResponseEndFrame,
-    LLMFullResponseStartFrame,
-    LLMTextFrame,
     TranscriptionFrame,
-    TTSUpdateSettingsFrame,
     UserStartedSpeakingFrame,
     UserStoppedSpeakingFrame,
+    VADUserStartedSpeakingFrame,
+    VADUserStoppedSpeakingFrame,
 )
+from pipecat.pipeline.job_context import JobError, JobGroupEvent, JobParams
 from pipecat.pipeline.worker import PipelineWorker
 from pipecat.processors.aggregators.llm_context import LLMContext
 from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
-from pipecat.services.deepgram.tts import DeepgramTTSService
 
-from audience import (
-    NOTE_WELCOME,
-    USER,
-    Audience,
-    Cue,
-    Line,
-    Reading,
-    Route,
-    Transcript,
-    normalize,
-    plan_route,
+from audience import Audience, Plan, Reading, Take, plan
+from config import (
+    CHORUS_STAGGER_S,
+    MERGE_GAP_S,
+    MORE_MAX_S,
+    SPEAK_JOB,
+    SPEAK_TIMEOUT_S,
+    TRANSCRIPT_LAG_S,
+    TURN_GAP_S,
+    Character,
 )
-from cast import TurnArgs, looks
-from config import HANDOVER_WAIT_S, Agent
-
-LLM_LINE_FRAMES = (LLMFullResponseStartFrame, LLMTextFrame, LLMFullResponseEndFrame)
+from floor import Floor
+from room import NOTE, NOTE_HANDOFF, USER, Line, Transcript, handoff, is_silent, normalize
 
 
 def user_text(message: Any) -> str:
@@ -79,34 +79,65 @@ def user_text(message: Any) -> str:
     return content if isinstance(content, str) else ""
 
 
-class Director:
-    """Decides who answers, and keeps the one transcript every agent is shown."""
+@dataclass(eq=False)
+class Live:
+    """A take: a line asked of a character, from being written to having played."""
 
-    def __init__(self, cast: list[Agent], audience: Audience) -> None:
-        self.agents = cast
+    take: int
+    plan: Take
+    epoch: int
+    chorus: int | None = None
+    line: Line | None = None  # in the transcript once written
+    task: asyncio.Task | None = None
+    prev: Live | None = None  # the line it follows, in a run of lines in turn
+    heard: asyncio.Event = field(default_factory=asyncio.Event)  # set once it starts playing
+    done: asyncio.Event = field(default_factory=asyncio.Event)  # set once it's played, or dropped
+    started: bool = False  # its audio has started playing
+
+    @property
+    def speaker(self) -> str:
+        return self.plan.speaker
+
+
+class Director:
+    """Decides who speaks, and keeps the one transcript every character is shown."""
+
+    def __init__(self, cast: Sequence[Character], audience: Audience) -> None:
         self.cast = {c.id: c for c in cast}
         self.transcript = Transcript(cast)
         self.audience = audience
+        self.floor = Floor(self, list(self.cast))
         self.worker: PipelineWorker | None = None  # the room worker, set once it exists
-        self.looking: str | None = None  # the agent the user is looking at (the client says)
+        self.looking: str | None = None  # the character the user is looking at (the client says)
 
-        self.active: str | None = None  # the agent whose turn it is (their worker is active)
-        self.speaking: str | None = None  # whose line is flowing to the TTS
-        self._queue: list[Cue] = []  # turns promised after this one (a group's, the welcome)
-        self._generated: dict[str, str] = {}  # each agent's latest line, as written
+        self._lives: dict[int, Live] = {}
+        self._takes = itertools.count(1)
+        self._choruses = itertools.count(1)
+        self._users = itertools.count(1)
+        self._queue: list[Take] = []  # a plan's takes in turn, each asked once the last is written
+        self._epoch = 0  # moves on whenever the user takes the floor: older plans are void
 
         self._seen = 0  # messages of the aggregator's context already read
-        self._turns = 0  # user turns routed: a preview landing after its turn is dropped
+        self._turns = 0  # user turns routed: a read-along landing after its turn is dropped
         self._finals: list[str] = []  # the user's words so far this turn
         self._interim = ""
         self._preview_want: str | None = None
         self._preview_task: asyncio.Task | None = None
-
+        self._last_user: Line | None = None  # the user's last turn, and its id for the client...
+        self._last_user_id = ""
+        self._last_user_end = 0.0  # ...and when its words ended, and it was routed (monotonic)
+        self._last_user_at = 0.0
+        # The user's voice (VAD): whether they're audible now, and when it last started and
+        # stopped. It leads the transcript, and so the turn, by up to a second.
+        self._voice = False
+        self._voice_began = 0.0
+        self._voice_ended = 0.0
+        self._voice_starts: deque[float] = deque(maxlen=16)
+        self._turn_began = 0.0  # when the user's current (or last) turn started
+        self._wake = asyncio.Event()  # the voice changed, or the floor was taken
+        self._resume: asyncio.Task | None = None  # lets lines start again after a voice stops
         self._user_speaking = False
-        self._line_started = False  # the current turn's audio has started playing
-        self._line_done = asyncio.Event()  # ...and has stopped
         self._tasks: set[asyncio.Task] = set()
-        self._handover_task: asyncio.Task | None = None
 
     # --- Wiring --------------------------------------------------------------------------------
 
@@ -134,49 +165,231 @@ class Director:
         await self.emit(
             {
                 "type": "cast",
-                "agents": [
-                    {"id": c.id, "name": c.name, "role": c.role, "looks": looks(c)}
-                    for c in self.agents
+                "characters": [
+                    {"id": c.id, "name": c.name, "role": c.role} for c in self.cast.values()
                 ],
                 "audience": {"engine": a.engine, "release": a.release, "error": a.error},
             }
         )
 
-    # --- Turns ---------------------------------------------------------------------------------
+    # --- Plans and takes -----------------------------------------------------------------------
 
-    async def welcome(self) -> None:
-        """Everyone says hello, one after the other."""
-        await self.send_cast()
-        cues = [Cue(c.id, "welcome", NOTE_WELCOME) for c in self.agents]
-        self._queue = cues[1:]
-        await self.dispatch(cues[0])
+    async def play(self, plan: Plan) -> None:
+        """Start a plan: its first take now and the rest in turn, or all of them at once."""
+        if not plan.takes:
+            return
+        if plan.together:
+            # Spread over CHORUS_STAGGER_S from the first voice, in no particular order.
+            chorus = next(self._choruses)
+            delays = sorted(random.uniform(0.0, CHORUS_STAGGER_S) for _ in plan.takes)
+            delays[0] = 0.0
+            random.shuffle(delays)
+            for take, delay in zip(plan.takes, delays, strict=True):
+                await self.ask(take, after=set(), gap=0.0, delay=delay, chorus=chorus)
+            return
+        self._queue = list(plan.takes[1:])
+        await self.ask(plan.takes[0], after=set())
 
-    async def dispatch(self, cue: Cue) -> None:
-        """Give `cue.speaker` the floor: activate their worker with their view of the whole
-        conversation, and make sure everyone else is quiet."""
+    async def ask(
+        self,
+        take: Take,
+        *,
+        after: set[int],
+        gap: float = TURN_GAP_S,
+        delay: float = 0.0,
+        chorus: int | None = None,
+        prev: Live | None = None,
+    ) -> Live:
+        """Ask a character for a line: written now, played once `after` have finished."""
         assert self.worker is not None
-        messages = self.transcript.view(cue.speaker, cue.note)
-        self.active = cue.speaker
-        self._line_started = False
-        self._line_done = asyncio.Event()
-        for other in self.cast:
-            if other != cue.speaker:
-                await self.worker.deactivate_worker(other)
-        await self.worker.activate_worker(cue.speaker, args=TurnArgs(messages=messages))
-        name = self.cast[cue.speaker].name
-        logger.info(f"Director: {name}'s turn ({cue.reason})")
+        live = Live(next(self._takes), take, self._epoch, chorus, prev=prev)
+        self._lives[live.take] = live
+        view = self.transcript.view(take.speaker, take.note)
+        await self.floor.expect(
+            live.take, take.speaker, after=after, gap=gap, delay=delay, chorus=chorus
+        )
+        live.task = self.spawn(self._speak(live, view), f"take {live.take}")
+        logger.info(f"Director: {self.cast[take.speaker].name}, take {live.take} ({take.reason})")
         await self.emit(
             {
                 "type": "turn",
-                "speaker": cue.speaker,
-                "reason": cue.reason,
-                "note": cue.note,
+                "take": live.take,
+                "speaker": take.speaker,
+                "reason": take.reason,
+                "note": take.note,
                 "at": time.time(),
             }
         )
+        return live
+
+    async def _speak(self, live: Live, view: list[dict[str, str]]) -> None:
+        assert self.worker is not None
+        payload: dict[str, Any] = {"take": live.take, "messages": view}
+        params = JobParams(name=SPEAK_JOB, payload=payload, timeout=SPEAK_TIMEOUT_S)
+        try:
+            async with self.worker.job(live.speaker, params=params) as job:
+                async for event in job:
+                    if event.type == JobGroupEvent.UPDATE and event.data is not None:
+                        await self.written(live, str(event.data.get("text", "")))
+        except JobError as error:
+            logger.warning(f"Director: take {live.take} failed: {error}")
+            await self._unheard(live)
+            return
+        except asyncio.CancelledError:
+            logger.debug(f"Director: take {live.take} cancelled")
+            raise
+        stops = int(job.response.get("stops", 0))
+        logger.debug(f"Director: take {live.take} voiced ({stops} runs)")
+        await self.floor.complete(live.take, stops)
+
+    async def written(self, live: Live, text: str) -> None:
+        """A take's line is written (it's being voiced, and may be waiting for its turn)."""
+        text = normalize(text)
+        if live.epoch != self._epoch or live.take not in self._lives:
+            return
+        if not text or is_silent(text):
+            if text:
+                logger.info(f"Director: {self.cast[live.speaker].name} stays out of it")
+            else:
+                logger.warning(f"Director: {live.speaker} wrote nothing (take {live.take})")
+            await self._unheard(live)
+            return
+        text, passed = handoff(text, list(self.cast.values()))
+        if not text:  # only a tag: nothing to say, the question goes straight over
+            await self._unheard(live)
+        else:
+            live.line = self.transcript.add(
+                live.speaker, text, how=live.plan.how, chorus=live.chorus, to=[USER]
+            )
+        # Asked alone, a character can pass the question to whoever it's really for ("that's
+        # Bruno's department"): they answer next. A line passed on can't be passed again.
+        if (
+            passed is not None
+            and passed != live.speaker
+            and live.plan.reason in ("addressed", "fallback")
+            and live.epoch == self._epoch
+        ):
+            name = self.cast[live.speaker].name
+            logger.info(f"Director: {name} passes it to {self.cast[passed].name}")
+            self._queue.append(Take(passed, "handoff", NOTE_HANDOFF.format(other=name)))
+            if live.line is None:
+                await self.ask(self._queue.pop(0), after=set())
+                return
+        if live.line is None:
+            return
+        if live.started:
+            # Its first words were voiced, and started playing, before the rest was written.
+            await self.emit_line(f"t{live.take}", live.line)
+        self.spawn(self._follow(live), f"follow {live.take}")
+
+    async def _unheard(self, live: Live) -> None:
+        """A take that won't be heard (it said nothing, or failed): drop it, and let the rest of
+        a group in turn go on without it."""
+        epoch = self._epoch
+        await self.floor.drop(live.take)
+        if live.epoch != epoch or live.chorus is not None:
+            return
+        if self._queue:
+            after = {live.prev.take} if live.prev is not None else set()
+            await self.ask(self._queue.pop(0), after=after, prev=live.prev)
+
+    async def _follow(self, live: Live) -> None:
+        """The next in turn, if any, is asked for once the line before this one has started
+        playing: so the room is at most two lines ahead of what's being heard (one waiting its
+        turn, one being written), and no more is thrown away when the user cuts in."""
+        epoch = self._epoch
+        if live.epoch != epoch or live.chorus is not None or not self._queue:
+            return
+        if live.prev is not None:
+            await live.prev.heard.wait()
+        if epoch == self._epoch and self._queue:
+            await self.ask(self._queue.pop(0), after={live.take}, prev=live)
+
+    # --- What the floor reports ----------------------------------------------------------------
+
+    async def line_started(self, take: int) -> None:
+        live = self._lives.get(take)
+        if live is not None:
+            live.started = True
+            live.heard.set()
+            if live.line is not None:
+                await self.emit_line(f"t{take}", live.line)
+
+    async def line_finished(self, take: int, heard: str | None) -> None:
+        live = self._lives.pop(take, None)
+        if live is None:
+            return
+        live.heard.set()
+        live.done.set()
+        if live.task is not None and not live.task.done():
+            live.task.cancel()  # cut short: the character stops writing and voicing it
+        if heard is None and not live.started:
+            # Finished without a sound (its voice failed): never heard, so it's taken back.
+            await self._taken_back(live)
+        elif heard is not None:
+            # Cut short: recorded as far as it was heard (even if it was never all written).
+            if live.line is None and heard:
+                live.line = self.transcript.add(live.speaker, heard, how=live.plan.how, to=[USER])
+            if live.line is not None and heard:
+                live.line.text, live.line.interrupted = heard, True
+                await self.emit_line(f"t{take}", live.line)
+            else:
+                if live.line is not None:
+                    self.transcript.remove(live.line)
+                await self.emit({"type": "line", "id": f"t{take}", "removed": True})
+        elif live.line is None:
+            # Played out but never written down (the user had taken the floor by then).
+            await self.emit({"type": "line", "id": f"t{take}", "removed": True})
+
+    async def line_dropped(self, take: int) -> None:
+        live = self._lives.pop(take, None)
+        if live is not None:
+            live.done.set()
+            await self._taken_back(live)
+
+    async def _taken_back(self, live: Live) -> None:
+        """A line never heard: out of the transcript, off the client, its character stopped, and
+        whatever was to follow it dropped too."""
+        live.heard.set()
+        if live.task is not None and not live.task.done():
+            live.task.cancel()
+        if live.line is not None:
+            self.transcript.remove(live.line)
+        await self.emit({"type": "line", "id": f"t{live.take}", "removed": True})
+        for after in [lv for lv in self._lives.values() if lv.prev is live]:
+            await self.floor.drop(after.take)
+
+    async def voices(self, speakers: list[str]) -> None:
+        await self.emit({"type": "voices", "speakers": speakers, "at": time.time()})
+
+    # --- The user ------------------------------------------------------------------------------
+
+    async def take_floor(self) -> None:
+        """The user takes the floor: every take still to come is void, and every character still
+        writing or voicing is stopped. The voices themselves are stopped by the floor, when the
+        interruption reaches it."""
+        self._epoch += 1
+        self._wake.set()
+        self._queue.clear()
+        for live in list(self._lives.values()):
+            if live.task is not None and not live.task.done():
+                live.task.cancel()  # cancels the job: the character stops writing and voicing
+
+    async def interrupted(self) -> None:
+        """The floor is about to cut every line (the user spoke or typed over the room)."""
+        await self.take_floor()
+
+    async def user_started(self) -> None:
+        self._turn_began = time.monotonic()
+        self._user_speaking = True
+        await self.take_floor()
+
+    async def user_stopped(self) -> None:
+        self._user_speaking = False
 
     async def user_turn(self, context: LLMContext) -> None:
-        """A user turn has ended: ask Audience who it was for, record it, and hand them the turn."""
+        """A user turn has ended (Flux's call): record it, ask Audience who it was for, and play
+        the plan. A turn that continues one nobody has answered yet is read as one turn."""
         messages = context.get_messages()
         fresh = messages[self._seen :]
         self._seen = len(messages)
@@ -185,27 +398,113 @@ class Director:
         self._finals.clear()
         self._interim = ""
         self._preview_want = None
-        # A new turn replaces whatever was still to come (typed turns too: they interrupt without
-        # the user ever starting to speak).
-        self._queue.clear()
-        if self._handover_task is not None and not self._handover_task.done():
-            self._handover_task.cancel()
-        if not said:  # an interruption with no words: whoever had the floor carries on
-            if self.active is not None:
-                await self.dispatch(Cue(self.active, "continue"))
+        # Typed turns interrupt without the user ever starting to speak.
+        await self.take_floor()
+        epoch = self._epoch
+        if self._lives:
+            await self.floor.cut_all()
+        if not said:
             return
 
-        # Read before the line joins the transcript: the request's history is what came before.
-        reading = await self.audience.read(said, self.transcript, looking=self.looking, final=True)
-        route = plan_route(reading, self.agents, self.transcript.last_user_to())
-        line = self.transcript.add(USER, said, to=route.to)
-        await self.emit_line(line)
+        # When the words of this turn ended: the voice's end, unless the VAD missed them (a short
+        # word, quietly said) and its last end is from before this turn: then, now.
+        now = time.monotonic()
+        ended = self._voice_ended if self._voice_ended >= self._turn_began else now
+        line, line_id, history = self._user_line(said, ended)
+        await self.emit_line(line_id, line)
+
+        reading = await self.audience.read(line.text, history, looking=self.looking, final=True)
+        if epoch != self._epoch:
+            return  # another turn has started since (typed, say): it routes itself
+        # Nobody talks over the user: if they've gone on, their next words take the floor, and
+        # the two are read as one turn.
+        if await self._more(epoch, ended):
+            return
+        if not self._voice:
+            await self.floor.resume()  # their words are a turn now: lines may start
+        what = plan(reading, line, self.transcript)
+        line.to = what.addressed
+        await self.emit_line(line_id, line)
         await self.emit(
-            {**reading.to_message(), "looking": self.looking, "route": route.to_message()}
+            {**reading.to_message(), "looking": self.looking, "plan": what.to_message()}
         )
-        self.log_reading(reading, route)
-        self._queue = route.cues[1:]
-        await self.dispatch(route.cues[0])
+        self.log_reading(reading, what)
+        await self.play(what)
+
+    def _user_line(self, said: str, ended: float) -> tuple[Line, str, list[Line]]:
+        """Add what the user said to the transcript, or, if it carries on their last turn (it
+        began within MERGE_GAP_S of that one's end, and nothing has been heard since), add it to
+        that line. Returns the line, its id for the client, and the conversation before it."""
+        lines, last, now = self.transcript.lines, self._last_user, time.monotonic()
+        # When they first spoke again after their last turn's words ended (if they have).
+        again = next((t for t in self._voice_starts if t > self._last_user_end), None)
+        if again is not None:
+            went_on = again - self._last_user_end < MERGE_GAP_S
+        else:  # no new words since: the transcript of the same words, finalised in two parts
+            went_on = now - self._last_user_at < MERGE_GAP_S
+        if last is not None and last in lines and went_on:
+            after = lines[lines.index(last) + 1 :]
+            if all(ln.speaker == NOTE for ln in after):
+                last.text = normalize(f"{last.text} {said}")
+                self._last_user_end, self._last_user_at = ended, now
+                logger.info("Director: the user carried on their last turn")
+                return last, self._last_user_id, lines[: lines.index(last)]
+        history = list(lines)
+        line = self.transcript.add(USER, said)
+        self._last_user, self._last_user_id = line, f"u{next(self._users)}"
+        self._last_user_end, self._last_user_at = ended, now
+        return line, self._last_user_id, history
+
+    async def _more(self, epoch: int, ended: float) -> bool:
+        """If the user's voice has started again since their turn's words `ended`, wait until
+        those words become a turn (the transcript trails the voice), MORE_MAX_S at most, or
+        TRANSCRIPT_LAG_S after the voice stops without one. True if a new turn has taken the
+        floor."""
+        start = time.monotonic()
+        while epoch == self._epoch:
+            if self._voice_began <= ended:  # not speaking again
+                return False
+            lag = self._voice_ended + TRANSCRIPT_LAG_S
+            until = start + MORE_MAX_S if self._voice else min(start + MORE_MAX_S, lag)
+            left = until - time.monotonic()
+            if left <= 0:
+                return False
+            self._wake.clear()
+            try:
+                await asyncio.wait_for(self._wake.wait(), left)
+            except TimeoutError:
+                pass
+        return True
+
+    async def voice(self, on: bool) -> None:
+        """The VAD heard the user's voice start or stop. Nobody starts a line while they're
+        speaking: the floor pauses, and resumes when their words have become a turn (when it's
+        routed), or TRANSCRIPT_LAG_S after the voice stops without one (a cough, a laugh)."""
+        now = time.monotonic()
+        if on and not self._voice:
+            self._voice_began = now
+            self._voice_starts.append(now)
+        elif not on and self._voice:
+            self._voice_ended = now
+        if on and not self._voice and not self._user_speaking:
+            # A new utterance, with no turn open: whatever was heard before it (a laugh that
+            # didn't take the floor) is not part of what comes next.
+            self._finals.clear()
+            self._interim = ""
+        self._voice = on
+        self._wake.set()
+        if self._resume is not None:
+            self._resume.cancel()
+            self._resume = None
+        if on:
+            await self.floor.pause()
+        else:
+            self._resume = self.spawn(self._resume_after(TRANSCRIPT_LAG_S), "resume")
+
+    async def _resume_after(self, delay: float) -> None:
+        await asyncio.sleep(delay)
+        if not self._voice:
+            await self.floor.resume()
 
     async def heard(self, text: str, final: bool) -> None:
         """Words still being spoken: Audience reads them now, for the client to watch."""
@@ -226,100 +525,49 @@ class Director:
         read: str | None = None
         while self._preview_want and self._preview_want != read:
             read, turn = self._preview_want, self._turns
-            reading = await self.audience.read(
-                read, self.transcript, looking=self.looking, final=False
-            )
+            history = list(self.transcript.lines)
+            reading = await self.audience.read(read, history, looking=self.looking, final=False)
             if turn != self._turns:  # the turn ended while it was read: the route has it
                 return
             await self.emit({**reading.to_message(), "looking": self.looking})
 
-    async def look(self, agent: str | None) -> None:
-        """The user looks at an agent (None: at nobody in particular)."""
-        self.looking = agent if agent in self.cast else None
+    async def look(self, character: str | None) -> None:
+        """The user looks at a character (None: at nobody in particular)."""
+        self.looking = character if character in self.cast else None
         logger.info(f"Director: the user looks at {self.looking or 'nobody'}")
-
-    def line_generated(self, speaker: str, text: str) -> None:
-        """An agent's whole line, as written (the TTS's word timings drop some punctuation)."""
-        self._generated[speaker] = normalize(text)
-
-    async def line_spoken(self, content: str, interrupted: bool) -> None:
-        """An agent's line has ended: record what was said, and hand over to the next in line."""
-        speaker = self.speaking
-        if speaker is None:
-            return
-        written = self._generated.pop(speaker, None)
-        # A whole line is recorded as written; a line cut short, as far as it was heard.
-        text = normalize(content if interrupted or not written else written)
-        if not text:
-            if interrupted:
-                self._queue.clear()
-            return
-        line = self.transcript.add(speaker, text, to=[USER], interrupted=interrupted)
-        await self.emit_line(line)
-        if interrupted or self._user_speaking:
-            self._queue.clear()
-        elif self._queue:
-            self._handover_task = self.spawn(self._hand_over(self._queue.pop(0)), "handover")
-
-    async def _hand_over(self, cue: Cue) -> None:
-        # The next line waits for this one to finish playing, unless the user takes the floor.
-        try:
-            await asyncio.wait_for(self._line_done.wait(), HANDOVER_WAIT_S)
-        except TimeoutError:
-            logger.warning(f"Director: the line didn't finish playing in {HANDOVER_WAIT_S} s")
-        if self._user_speaking:
-            return
-        await self.dispatch(cue)
-
-    # --- What the processors report ------------------------------------------------------------
-
-    async def user_started(self) -> None:
-        self._user_speaking = True
-        self._queue.clear()
-        if self._handover_task is not None and not self._handover_task.done():
-            self._handover_task.cancel()
-
-    async def user_stopped(self) -> None:
-        self._user_speaking = False
-
-    async def bot_started(self) -> None:
-        self._line_started = True
-        await self.emit({"type": "speaker", "speaker": self.speaking, "at": time.time()})
-
-    async def bot_stopped(self) -> None:
-        if self._line_started:
-            self._line_done.set()
-        await self.emit({"type": "speaker", "speaker": None, "at": time.time()})
-
-    def line_starting(self, speaker: str) -> None:
-        self.speaking = speaker
 
     # --- Reporting -----------------------------------------------------------------------------
 
-    async def emit_line(self, line: Line) -> None:
+    async def emit_line(self, id_: str, line: Line) -> None:
         await self.emit(
             {
                 "type": "line",
+                "id": id_,
                 "speaker": line.speaker,
                 "to": line.to,
                 "text": line.text,
+                "how": line.how,
                 "interrupted": line.interrupted,
                 "at": time.time(),
             }
         )
 
-    def log_reading(self, reading: Reading, route: Route) -> None:
+    def log_reading(self, reading: Reading, what: Plan) -> None:
         a = reading.answer
         if a is None:
             scores = f"failed ({reading.error})"
         else:
-            people = ", ".join(f"{k} {v:.2f}" for k, v in a.addressed.items())
+            top = sorted(a.addressed.items(), key=lambda kv: -kv[1])
+            people = ", ".join(f"{k} {v:.2f}" for k, v in top)
             scores = f"{people}; unclear {a.unclear:.2f}, group {a.to_group:.2f}"
-        speakers = ", ".join(self.cast[c.speaker].name for c in route.cues)
+        speakers = ", ".join(self.cast[t.speaker].name for t in what.takes)
+        looking = f", looking at {self.looking}" if self.looking else ""
+        # What was said is only logged at DEBUG: the decisions, not the words.
         logger.info(
-            f'Audience ({reading.engine}, {reading.ms:.0f} ms): "{reading.heard}" → {scores} '
-            f"→ {route.kind}: {speakers}"
+            f"Audience ({reading.engine}, {reading.ms:.0f} ms{looking}): {scores} "
+            f"→ {what.why}: {speakers}"
         )
+        logger.debug(f'Audience read: "{reading.heard}"')
 
     # --- Processors ----------------------------------------------------------------------------
 
@@ -328,9 +576,6 @@ class Director:
 
     def router(self) -> Router:
         return Router(self)
-
-    def playback(self) -> Playback:
-        return Playback(self)
 
 
 class Hearing(FrameProcessor):
@@ -347,77 +592,37 @@ class Hearing(FrameProcessor):
             and frame.text.strip()
         ):
             await self._director.heard(frame.text, isinstance(frame, TranscriptionFrame))
+        elif isinstance(frame, (VADUserStartedSpeakingFrame, VADUserStoppedSpeakingFrame)):
+            # The user aggregator runs the VAD, and always sends its verdicts back up this
+            # way (downstream, only some of the time).
+            if direction == FrameDirection.UPSTREAM:
+                await self._director.voice(isinstance(frame, VADUserStartedSpeakingFrame))
         await self.push_frame(frame, direction)
 
 
 class Router(FrameProcessor):
-    """After the user aggregator: each finished user turn goes to the director, not the bridge."""
+    """After the user aggregator: each finished user turn goes to the director."""
 
     def __init__(self, director: Director) -> None:
         super().__init__(name="Router")
         self._director = director
+        self._route: asyncio.Task | None = None
 
     async def process_frame(self, frame: Frame, direction: FrameDirection) -> None:
         await super().process_frame(frame, direction)
         director = self._director
         if isinstance(frame, LLMContextFrame) and direction == FrameDirection.DOWNSTREAM:
-            # Off the frame loop, so the pipeline keeps moving while the turn is routed.
-            director.spawn(director.user_turn(frame.context), "route")
+            if frame.speculation:
+                logger.warning("Router: a speculative turn isn't routed (eager turn-taking is off)")
+                return
+            # Routed off the frame loop; speech that starts in the meantime cancels the route
+            # (the new words make a turn of their own).
+            self._route = director.spawn(director.user_turn(frame.context), "route")
             return
         if isinstance(frame, UserStartedSpeakingFrame):
+            if self._route is not None and not self._route.done():
+                self._route.cancel()
             await director.user_started()
         elif isinstance(frame, UserStoppedSpeakingFrame):
             await director.user_stopped()
-        await self.push_frame(frame, direction)
-
-
-class CastBridge(BusBridgeProcessor):
-    """The bus bridge to the agents, which also gives each line its speaker's voice.
-
-    A line starting from an agent (`LLMFullResponseStartFrame` from their worker) switches the TTS
-    to their voice first, in the same stream, so the switch lands exactly between two lines. Lines
-    from an agent whose turn it no longer is (still in flight after a handover) are dropped. Each
-    finished line is passed to the director as written.
-    """
-
-    def __init__(self, director: Director, *, voice: str, **kwargs) -> None:
-        super().__init__(**kwargs)
-        self._director = director
-        self._voice = voice
-        self._text: dict[str, list[str]] = {}
-
-    async def on_bus_message(self, message: BusMessage) -> None:
-        director = self._director
-        if isinstance(message, BusFrameMessage) and message.source in director.cast:
-            frame, speaker = message.frame, message.source
-            if isinstance(frame, LLM_LINE_FRAMES) and speaker != director.active:
-                return
-            if isinstance(frame, LLMFullResponseStartFrame):
-                director.line_starting(speaker)
-                self._text[speaker] = []
-                voice = director.cast[speaker].voice
-                if voice != self._voice:
-                    self._voice = voice
-                    settings = DeepgramTTSService.Settings(voice=voice)
-                    await self.push_frame(TTSUpdateSettingsFrame(delta=settings))
-            elif isinstance(frame, LLMTextFrame):
-                self._text.setdefault(speaker, []).append(frame.text)
-            elif isinstance(frame, LLMFullResponseEndFrame):
-                director.line_generated(speaker, "".join(self._text.pop(speaker, [])))
-        await super().on_bus_message(message)
-
-
-class Playback(FrameProcessor):
-    """After the output transport: when the bot's audio starts and stops playing."""
-
-    def __init__(self, director: Director) -> None:
-        super().__init__(name="Playback")
-        self._director = director
-
-    async def process_frame(self, frame: Frame, direction: FrameDirection) -> None:
-        await super().process_frame(frame, direction)
-        if isinstance(frame, BotStartedSpeakingFrame):
-            await self._director.bot_started()
-        elif isinstance(frame, BotStoppedSpeakingFrame):
-            await self._director.bot_stopped()
         await self.push_frame(frame, direction)

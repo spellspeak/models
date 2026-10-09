@@ -1,87 +1,98 @@
 [
   {
-    "id": "maya",
-    "name": "Maya",
-    "role": "Biohacker",
-    "tagline": "Grows luminous plants that keep Neon Yard breathing. Always testing a new strain.",
-    "topics": "biotech, glowing plants, hydroponics, air filters, urban gardens, biohacking",
-    "aliases": [
-      "biohacker",
-      "plant grower"
-    ],
-    "features": {
-      "appearance": "woman",
-      "hair": "long red braid",
-      "clothing": "lime-green sleeveless biotech suit with black panels and a utility belt",
-      "eyewear": "round safety glasses",
-      "holding": "a handheld scanner",
-      "standing beside": "a cylindrical glass plant tank containing luminous green plants"
-    },
-    "voice": "aura-2-thalia-en",
-    "hex": "#c5f76b"
-  },
-  {
-    "id": "theo",
-    "name": "Theo",
-    "role": "Street mechanic",
-    "tagline": "Repairs Neon Yard's broken machines with a silver arm and a dry sense of humour.",
-    "topics": "robot repairs, cybernetic limbs, tools, engines, salvaged electronics, workshop life",
-    "aliases": [
-      "mechanic",
-      "robot repairer"
-    ],
-    "features": {
-      "appearance": "broad man",
-      "hair": "short dark hair and beard",
-      "clothing": "black work tank top and orange overalls with upper half tied at the waist",
-      "arm": "an oversized silver cybernetic arm",
-      "holding": "a wrench",
-      "standing beside": "an orange repair bench with a dismantled robot head"
-    },
-    "voice": "aura-2-apollo-en",
-    "hex": "#ffb454"
-  },
-  {
-    "id": "juno",
-    "name": "Juno",
+    "id": "nova",
+    "name": "Nova",
     "role": "Courier",
-    "tagline": "Knows every shortcut above the rain-soaked streets. Her hoverbike is always ready.",
-    "topics": "deliveries, hoverbikes, city shortcuts, transit routes, rooftop roads, street racing",
-    "aliases": [
+    "tagline": "Rides anything with two wheels. Never late, rarely polite.",
+    "topics": "riding and racing bikes (not fixing them), deliveries, routes and shortcuts, the city at night",
+    "aliases": [],
+    "keyterms": [
       "courier",
-      "bike messenger"
+      "jumpsuit",
+      "flight suit",
+      "ponytail",
+      "dirt bike"
     ],
     "features": {
-      "appearance": "woman",
-      "hair": "short purple hair",
-      "clothing": "yellow raincoat",
-      "carrying": "a motorcycle helmet",
-      "standing beside": "a magenta hoverbike"
+      "appearance": "young woman, a girl",
+      "hair": "long purple ponytail",
+      "clothing": "orange jumpsuit (a flight suit) and boots",
+      "near": "a dirt bike, one hand on the handlebar"
     },
-    "voice": "aura-2-luna-en",
-    "hex": "#ff5fa2"
+    "voice": "aura-2-helena-en",
+    "hex": "#ff8a4c",
+    "portrait": "01-purple-hair.png"
   },
   {
-    "id": "otto",
-    "name": "Otto",
-    "role": "Cyborg data broker",
-    "tagline": "A cyborg carrying city secrets in an armoured chassis. Trades useful tips beside the vending machine.",
-    "topics": "city rumours, data networks, encrypted messages, information trades, local history, night markets",
-    "aliases": [
-      "cyborg data broker",
-      "data broker"
+    "id": "bruno",
+    "name": "Bruno",
+    "role": "Engineer",
+    "tagline": "Can fix anything, given a stool, a wrench and a good grumble.",
+    "topics": "fixing anything mechanical: bikes, engines, machines, wiring, tools and spare parts",
+    "aliases": [],
+    "keyterms": [
+      "engineer",
+      "hoodie",
+      "cap",
+      "beard",
+      "wrench"
     ],
     "features": {
-      "appearance": "humanoid cyborg, small partial human face, predominantly mechanical body",
-      "hair": "short silver-white hair",
-      "eyes": "one human eye and one glowing amber mechanical eye",
-      "cybernetics": "exposed metal cranium, jaw and neck; mechanical torso; both metal arms and legs",
-      "stature": "adult human height",
-      "body": "dark structural chassis with cyan armor panels",
-      "holding": "a small glowing data tablet",
-      "standing beside": "a cyan vending machine"
+      "appearance": "bearded man",
+      "headwear": "lime-green cap",
+      "clothing": "lime-green hoodie and a tool belt",
+      "doing": "crouched on a stool, fixing a machine"
     },
-    "voice": "aura-2-orion-en",
-    "hex": "#58e1ef"
+    "voice": "aura-2-hyperion-en",
+    "hex": "#c8f53c",
+    "portrait": "04-green-cap.png"
+  },
+  {
+    "id": "atlas",
+    "name": "Atlas",
+    "role": "Robot",
+    "tagline": "Seven feet of salvaged security droid. Polite, literal, endlessly patient.",
+    "topics": "security, keeping watch, protocols, facts and figures, how robots work",
+    "aliases": [],
+    "keyterms": [
+      "robot",
+      "droid",
+      "red eyes",
+      "doorway"
+    ],
+    "features": {
+      "appearance": "tall humanoid robot",
+      "build": "gunmetal armour plating",
+      "eyes": "glowing red eyes",
+      "near": "the doorway at the back"
+    },
+    "voice": "aura-2-zeus-en",
+    "hex": "#7aa2f7",
+    "portrait": "03-robot.png"
+  },
+  {
+    "id": "kai",
+    "name": "Kai",
+    "role": "Hacker",
+    "tagline": "Lives in the terminals. Short sentences, long memory.",
+    "topics": "computers, networks, code, hacking, security systems, finding information",
+    "aliases": [],
+    "keyterms": [
+      "hacker",
+      "helmet",
+      "visor",
+      "terminal",
+      "screens"
+    ],
+    "features": {
+      "appearance": "woman in black",
+      "hair": "hidden",
+      "clothing": "black jacket with patches",
+      "headwear": "black helmet with a visor",
+      "near": "the terminals and screens, half turned away"
+    },
+    "voice": "aura-2-pandora-en",
+    "hex": "#e879f9",
+    "portrait": "05-visor.png"
   }
 ]

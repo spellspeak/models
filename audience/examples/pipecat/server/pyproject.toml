@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Four agents in one Pipecat bot; SpellSpeak Audience reads who each user turn is for and hands it to them"
 requires-python = ">=3.12"
 dependencies = [
-    "pipecat-ai[deepgram,openai,runner,webrtc]==1.12.0",
+    "pipecat-ai[daily,deepgram,openai,runner,silero]==1.12.0",
     "python-dotenv>=1.1,<2",
     # Audience's reference runtime (releases/rc1/runtime)
     "onnxruntime>=1.24",

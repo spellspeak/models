@@ -1,7 +1,6 @@
-import { Mic, User } from "lucide-react"
 import { useEffect, useRef } from "react"
 
-import { USER, colorOf, labelOf } from "@/cast"
+import { CAST, USER, colorOf, labelOf } from "@/cast"
 import { Panel } from "@/components/panel"
 import { useRoom } from "@/store"
 
@@ -13,42 +12,36 @@ export function Transcript() {
   const scroll = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight
-  }, [lines.length, heard])
+  }, [lines, heard])
 
   return (
     <Panel
       title="conversation"
       status={<span className="text-muted-foreground">{lines.length} lines</span>}
-      className="flex h-80 min-h-0 flex-col xl:h-96"
+      className="flex min-h-0 flex-1 basis-0 flex-col"
     >
-      <div ref={scroll} className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 pt-5 pb-4">
-        {lines.map((l, i) => {
+      <div ref={scroll} className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-4 pt-5 pb-4 text-[12px] leading-[1.55]">
+        {lines.map((l) => {
           const you = l.speaker === USER
           const color = colorOf(l.speaker)
-          const to = you ? (l.to.length ? l.to.map(labelOf).join(", ") : "unclear") : null
+          const to = you ? (l.to.length ? (l.to.length === CAST.length ? "everyone" : l.to.map((t) => labelOf(t).toLowerCase()).join(", ")) : "?") : null
           return (
-            <p key={i} className="flex gap-2">
-              {you ? (
-                <User className="mt-1 size-3.5 shrink-0" style={{ color }} aria-hidden />
-              ) : (
-                <Mic className="mt-1 size-3.5 shrink-0" style={{ color }} aria-hidden />
-              )}
-              <span>
-                <span style={{ color }}>{labelOf(l.speaker)}</span>
-                {to && <span className="text-muted-foreground/60"> → {to}</span>}
-                <span className="text-muted-foreground/60">: </span>
-                <span className="text-foreground">
-                  {l.text}
-                  {l.interrupted ? "…" : ""}
-                </span>
+            <p key={l.id}>
+              <span style={{ color }}>{labelOf(l.speaker).toLowerCase()}</span>
+              {to && <span className="text-muted-foreground/60"> → {to}</span>}
+              {l.how === "together" && <span className="text-muted-foreground/50"> ∥</span>}
+              <span className="text-muted-foreground/50"> │ </span>
+              <span className="text-foreground">
+                {l.text}
+                {l.interrupted ? "…" : ""}
               </span>
             </p>
           )
         })}
         {heard && (
-          <p className="flex items-center gap-2 text-muted-foreground">
-            <User className="size-3.5 text-client" aria-hidden />
-            <span className={userSpeaking ? "text-active" : "text-client"}>{userSpeaking ? "● " : ""}</span>
+          <p className="text-muted-foreground">
+            <span className={userSpeaking ? "text-active" : "text-client"}>{userSpeaking ? "● " : ""}you</span>
+            <span className="text-muted-foreground/50"> │ </span>
             {heard}
           </p>
         )}

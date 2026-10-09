@@ -24,3 +24,12 @@ audience/releases/*/tokenizer.json
 audience/releases/*/config.json
 audience/space/release/
 *.tsbuildinfo
+
+# The polygon script's check image
+audience/examples/pipecat/client/scripts/masks/sheet.png
+
+# macOS
+.DS_Store
+
+# The pipecat example's working files: source art, drafts
+audience/examples/pipecat/output/

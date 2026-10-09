@@ -1,25 +1,27 @@
 import { PipecatClient, RTVIEvent } from "@pipecat-ai/client-js"
 import {
-  PipecatClientAudio,
   PipecatClientProvider,
   usePipecatClient,
   usePipecatClientTransportState,
   useRTVIClientEvent,
 } from "@pipecat-ai/client-react"
-import { SmallWebRTCTransport } from "@pipecat-ai/small-webrtc-transport"
+import { DailyTransport } from "@pipecat-ai/daily-transport"
 import { useCallback, useEffect, useState } from "react"
 
-import { CAST } from "@/cast"
-import { ConnectScreen } from "@/components/connect-screen"
-import { Reading } from "@/components/reading"
-import { Scene } from "@/components/scene"
-import { Seat } from "@/components/seat"
+import { CastAudio } from "@/components/cast-audio"
+import { Readout } from "@/components/readout"
+import { Blips, Scene, Strip } from "@/components/scene"
 import { Transcript } from "@/components/transcript"
 import { useRoom } from "@/store"
 import type { ServerMessage } from "@/types"
 
-/** The dev runner's WebRTC offer endpoint. A direct offer starts a session. */
-const OFFER_URL = import.meta.env.VITE_BOT_OFFER_URL || "http://localhost:7860/api/offer"
+/**
+ * Where a session starts: the Pipecat dev runner's /start (`cd server && uv run bot.py -t daily`).
+ * It makes a Daily room, starts the bot in it, and answers with the room's URL and a token.
+ */
+const START_URL = import.meta.env.VITE_BOT_START_URL || "http://localhost:7860/start"
+
+const BUSY = ["initializing", "authenticating", "authenticated", "connecting", "disconnecting"]
 
 const STATUS: Record<string, { label: string; tone: string }> = {
   idle: { label: "session idle", tone: "text-muted-foreground" },
@@ -52,7 +54,7 @@ function RoomSync() {
     RTVIEvent.BotReady,
     useCallback(() => {
       const { looking } = useRoom.getState()
-      if (client && looking) client.sendClientMessage("look", { agent: looking })
+      if (client && looking) client.sendClientMessage("look", { character: looking })
     }, [client])
   )
   return null
@@ -70,7 +72,7 @@ function TextLine() {
   }
   return (
     <form
-      className="flex h-9 shrink-0 items-center gap-2 border border-border px-3"
+      className="flex h-9 shrink-0 items-center gap-2 border border-border px-3 text-[12px]"
       onSubmit={(e) => {
         e.preventDefault()
         void send()
@@ -87,71 +89,81 @@ function TextLine() {
   )
 }
 
-function Session({
-  onConnect,
-  onDisconnect,
-  error,
-}: {
-  onConnect: () => void
-  onDisconnect: () => void
-  error: string | null
-}) {
+/** Before a session: the scene at rest, and the way in. */
+function Enter({ onConnect, error }: { onConnect: () => void; error: string | null }) {
+  const state = usePipecatClientTransportState()
+  const busy = BUSY.includes(state)
+  return (
+    <div className="absolute inset-0 flex items-end justify-center bg-black/55 p-6 pb-28">
+      <div className="max-w-md space-y-4 border border-border bg-black/80 px-6 py-5 text-[12px] leading-[1.6]">
+        <p className="text-[11px] tracking-widest text-agent uppercase">spellspeak audience · pipecat</p>
+        <h2 className="text-lg text-foreground">Four in a garage, one of you.</h2>
+        <p className="text-muted-foreground">
+          Talk to one of them by name or by what you can see, to a couple of them, to everyone, or to
+          nobody in particular. Audience works out who each turn is for before anyone answers. Click
+          someone to look at them.
+        </p>
+        <p className="text-muted-foreground/70">
+          try “bruno, can you fix my bike?” · “you in the orange suit…” · “hey, all of you!” · “oi, you!”
+        </p>
+        <button
+          type="button"
+          onClick={onConnect}
+          disabled={busy}
+          className="border border-active/60 px-5 py-2 leading-none tracking-wider text-active uppercase transition-colors hover:bg-active/10 disabled:opacity-60"
+        >
+          {busy ? "connecting…" : "walk in"}
+        </button>
+        {error && <p className="text-inactive">{error}</p>}
+      </div>
+    </div>
+  )
+}
+
+function Session({ onConnect, onDisconnect, error }: { onConnect: () => void; onDisconnect: () => void; error: string | null }) {
   const state = usePipecatClientTransportState()
   const live = state === "ready"
   const phase =
-    error || state === "error"
-      ? "error"
-      : live
-        ? "live"
-        : state === "disconnected" || state === "initialized"
-          ? "idle"
-          : "starting"
+    error || state === "error" ? "error" : live ? "live" : state === "disconnected" || state === "initialized" ? "idle" : "starting"
   const status = STATUS[phase]
 
   return (
-    <div className="flex min-h-svh flex-col gap-5 p-3 text-[13px] leading-[1.6] sm:p-4">
-      <header className="mx-auto flex min-h-9 w-full max-w-[1440px] shrink-0 items-center justify-between gap-3">
-        <h1 className="flex flex-wrap items-center gap-x-2.5 text-sm sm:text-base">
-          <span className="font-medium text-agent">Neon Yard</span>
-          <span className="text-muted-foreground/60">/</span>
-          <span className="font-medium text-agent">spellspeak audience</span>
-        </h1>
-        {live && (
-          <button
-            type="button"
-            onClick={onDisconnect}
-            className="border border-inactive/60 px-4 py-2 text-[13px] leading-none tracking-wider text-inactive uppercase transition-colors hover:bg-inactive/10"
-          >
-            Hang up
-          </button>
-        )}
-      </header>
-
-      {!live && <ConnectScreen onConnect={onConnect} error={error} />}
-      <main className={`mx-auto grid w-full max-w-[1440px] flex-1 items-start gap-6 lg:grid-cols-[1.3fr_1fr] ${live ? "" : "hidden"}`}>
-        <div className="min-w-0 space-y-6">
-          <Scene />
-          <div className="grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-2">
-            {CAST.map((c) => (
-              <Seat key={c.id} agent={c} />
-            ))}
-          </div>
-        </div>
-        <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-4">
-          <Reading />
+    <div className="flex h-svh flex-col gap-3 p-3 text-[13px] leading-[1.6]">
+      <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto lg:flex-row lg:overflow-visible">
+        <Scene>
+          {live ? (
+            <>
+              <Blips />
+              <Strip />
+            </>
+          ) : (
+            <Enter onConnect={onConnect} error={error} />
+          )}
+        </Scene>
+        <aside className="flex min-h-[26rem] w-full shrink-0 flex-col gap-3 lg:min-h-0 lg:w-[360px]">
+          <Readout />
           <Transcript />
           <TextLine />
-        </div>
+        </aside>
       </main>
 
-      <footer className="mx-auto flex h-6 w-full max-w-[1440px] shrink-0 items-center text-[13px] font-medium">
+      <footer className="flex h-7 shrink-0 items-center justify-between text-[12px] font-medium">
         <span className={status.tone}>
           <span className="mr-1.5">▸▸</span>
           {status.label}
         </span>
+        {live && (
+          <button
+            type="button"
+            onClick={onDisconnect}
+            className="border border-inactive/60 px-3 py-1.5 text-[12px] leading-none tracking-wider text-inactive uppercase transition-colors hover:bg-inactive/10"
+          >
+            Leave
+          </button>
+        )}
       </footer>
 
-      <PipecatClientAudio />
+      <CastAudio />
       <RoomSync />
     </div>
   )
@@ -162,11 +174,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const c = new PipecatClient({
-      transport: new SmallWebRTCTransport({ webrtcRequestParams: { endpoint: OFFER_URL } }),
-      enableMic: true,
-      enableCam: false,
-    })
+    const c = new PipecatClient({ transport: new DailyTransport(), enableMic: true, enableCam: false })
     setClient(c)
     return () => {
       void c.disconnect().catch(() => {})
@@ -178,7 +186,10 @@ export default function App() {
     if (!client) return
     setError(null)
     try {
-      await client.connect()
+      await client.startBotAndConnect({
+        endpoint: START_URL,
+        requestData: { transport: "daily", createDailyRoom: true },
+      })
     } catch (err) {
       setError(`Failed to start session: ${err instanceof Error ? err.message : String(err)}`)
       await client.disconnect().catch(() => {})

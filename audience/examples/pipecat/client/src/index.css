@@ -10,21 +10,21 @@
   src: url("./assets/fonts/JetBrainsMono-Variable.woff2") format("woff2-variations");
 }
 
+/* The scene's own palette: ink black, cool indigo, terminal green and the cast's colours. */
 @theme {
   --font-sans: "JetBrains Mono Variable", ui-monospace, monospace;
   --font-mono: var(--font-sans);
-  --color-background: #121218;
-  --color-foreground: #c9cee3;
-  --color-card: #1a1b23;
-  --color-muted: #1f202a;
-  --color-muted-foreground: #6e7288;
-  --color-border: #2a2c38;
+  --color-background: #06060c;
+  --color-foreground: #c6cbf0;
+  --color-card: #0b0c17;
+  --color-muted: #12142a;
+  --color-muted-foreground: #6b72a8;
+  --color-border: #1f2342;
   --color-active: #9ece6a;
   --color-inactive: #f7768e;
-  --color-agent: #bb9af7;
-  --color-client: #7aa2f7;
+  --color-agent: #8f9cff;
+  --color-client: #7dd3fc;
   --color-tool: #e0af68;
-  
   --radius: 0rem;
 }
 
@@ -44,11 +44,53 @@
   }
 }
 
-/* The agent who is speaking: their seat pulses in their tint. */
-@keyframes floor {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--tint) 40%, transparent); }
-  50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--tint) 0%, transparent); }
+/* The scene's pixels stay pixels when scaled. */
+.pixelated {
+  image-rendering: pixelated;
 }
-.animate-floor {
-  animation: floor 1.6s ease-in-out infinite;
+
+/* A faint CRT scanline over the scene, so the overlays sit in the picture rather than on it. */
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.18) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+}
+
+/* A character's outline, marching while they speak. */
+@keyframes march {
+  to {
+    stroke-dashoffset: -48;
+  }
+}
+.outline-speaking {
+  animation: march 0.9s linear infinite;
+}
+
+/* A portrait lit while its character speaks. */
+@keyframes pulse-tint {
+  0%, 100% { box-shadow: 0 0 0 1px var(--tint), 0 0 10px 0 color-mix(in oklab, var(--tint) 55%, transparent); }
+  50% { box-shadow: 0 0 0 1px var(--tint), 0 0 18px 2px color-mix(in oklab, var(--tint) 75%, transparent); }
+}
+.animate-speaking {
+  animation: pulse-tint 1.1s ease-in-out infinite;
+}
+
+/* The terminal cursor, for a character thinking of what to say. */
+@keyframes blink {
+  50% { opacity: 0; }
+}
+.animate-blink {
+  animation: blink 1s steps(1) infinite;
+}
+
+/* A blip: a log line that arrives, then fades back. */
+@keyframes blip {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-blip {
+  animation: blip 160ms ease-out;
 }
