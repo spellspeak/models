@@ -33,5 +33,6 @@ audience/examples/pipecat/client/scripts/masks/sheet.png
 # macOS
 .DS_Store
 
-# The pipecat example's working files: source art, drafts
+# The pipecat examples' working files: source art, drafts. Tone's uses the WebPs beside its PNGs.
 audience/examples/pipecat/output/
+tone/examples/pipecat/client/src/assets/portraits/**/*.png

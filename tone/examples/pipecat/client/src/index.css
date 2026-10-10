@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+/* JetBrains Mono, the upstream variable font (OFL, see assets/fonts/OFL.txt): the whole screen is a terminal,
+   and the block glyphs the meters are drawn with live in it. */
+@font-face {
+  font-family: "JetBrains Mono Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url("./assets/fonts/JetBrainsMono-Variable.woff2") format("woff2-variations");
+}
+
+/* The garage at night: ink black, cool indigo, terminal green, and the cast's colours. Sentiment has its own
+   three colours, for anything that says how a thing feels; a character's colour only ever names them. */
+@theme {
+  --font-sans: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-mono: var(--font-sans);
+  --color-background: #07070d;
+  --color-foreground: #c6cbf0;
+  --color-card: #0d0e1a;
+  --color-muted: #151831;
+  --color-muted-foreground: #6b72a8;
+  --color-border: #262a4d;
+  --color-active: #9ece6a;
+  --color-inactive: #f7768e;
+  --color-agent: #8f9cff;
+  --color-client: #7dd3fc;
+  --color-tool: #e0af68;
+  --color-hostile: #ff5f7a;
+  --color-cold: #f0b45c;
+  --color-warm: #a6e35f;
+  --color-neutral: #8a91c4;
+  --radius: 0rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+    border-radius: 0 !important;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+  html {
+    font-family: var(--font-sans);
+  }
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+  }
+  ::selection {
+    background: var(--color-agent);
+    color: var(--color-background);
+  }
+}
+
+/* Pixels stay pixels when scaled. */
+.pixelated {
+  image-rendering: pixelated;
+}
+
+/* A pixel frame: a hard 2 px line with the corners stepped in, drawn with offset shadows (no blur, no glow).
+   --frame sets its colour. */
+.frame {
+  --frame: var(--color-border);
+  box-shadow:
+    0 -2px 0 0 var(--frame),
+    0 2px 0 0 var(--frame),
+    -2px 0 0 0 var(--frame),
+    2px 0 0 0 var(--frame);
+}
+.frame-thick {
+  --frame: var(--color-border);
+  box-shadow:
+    0 -4px 0 0 var(--frame),
+    0 4px 0 0 var(--frame),
+    -4px 0 0 0 var(--frame),
+    4px 0 0 0 var(--frame);
+}
+
+/* A hard drop shadow for big type, one art pixel down and right. */
+.shadow-px {
+  text-shadow:
+    3px 3px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000;
+}
+
+/* Faint scanlines over the whole screen. */
+.scanlines::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.16) 0 1px, transparent 1px 3px);
+}
+
+/* The terminal cursor. */
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+.animate-blink {
+  animation: blink 1s steps(1) infinite;
+}
+
+/* A voice playing: four bars, stepping. */
+@keyframes bar {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.animate-bar {
+  transform-origin: bottom;
+  animation: bar 0.6s steps(4) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blink,
+  .animate-bar {
+    animation: none;
+  }
+}

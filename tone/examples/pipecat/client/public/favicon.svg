@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Targeting: corner brackets round a lock-on dot, in the cast's colours, on the garage's ink black. -->
+  <rect width="32" height="32" fill="#06060c"/>
+  <g fill="none" stroke-width="2.5" stroke-linecap="square">
+    <path d="M4 11V4h7" stroke="#ff8a4c"/>
+    <path d="M21 4h7v7" stroke="#e879f9"/>
+    <path d="M28 21v7h-7" stroke="#7aa2f7"/>
+    <path d="M11 28H4v-7" stroke="#c8f53c"/>
+  </g>
+  <rect x="13" y="13" width="6" height="6" fill="#8f9cff"/>
+</svg>
