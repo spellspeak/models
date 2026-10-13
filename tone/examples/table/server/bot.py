@@ -28,7 +28,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 load_dotenv(HERE / ".env", override=True)
 
 # Tone's model files and reference runtime: a release folder of this repo.
-RELEASE = pathlib.Path(os.getenv("TONE_DIR", HERE.parent.parent.parent / "releases" / "rc3")).resolve()
+RELEASE = pathlib.Path(os.getenv("TONE_DIR", HERE.parent.parent.parent / "releases" / "rc4")).resolve()
 sys.path.insert(0, str(RELEASE / "runtime"))
 
 from contracts.schemas.line_tags import PLAYER, LineInput, LineTags, is_hostile  # noqa: E402
@@ -174,6 +174,7 @@ class LineTagger(FrameProcessor):
         t0 = time.perf_counter()
         tags: LineTags = await asyncio.get_running_loop().run_in_executor(None, self.tone.tag, inp)
         latency = round((time.perf_counter() - t0) * 1000, 1)
+        sarcasm = getattr(tags, "sarcasm", None)  # rc4 on: whether the line is sarcastic, and how likely
         changes = self.table.hearts.on_line(speaker, tags)
         self.table.record(speaker, text)
         self.table.counter += 1
@@ -198,6 +199,7 @@ class LineTagger(FrameProcessor):
                 for target, a in tags.acts.items()
             },
             "backchannel": tags.backchannel,
+            "sarcasm": sarcasm.model_dump() if sarcasm else None,
             "hearts": dict(self.table.hearts.value),
             "changes": changes,
             "latency_ms": latency,
@@ -206,6 +208,7 @@ class LineTagger(FrameProcessor):
         logger.info(
             f"Tone: {speaker} {tags.emotion}/{tags.emotion_intensity} in {latency} ms"
             + (f", hostile toward {', '.join(hostile)}" if hostile else "")
+            + (f", sarcastic ({sarcasm.probability:.0%})" if sarcasm and sarcasm.sarcastic and sarcasm.probability is not None else "")
             + (f", hearts {changes}" if changes else "")
         )
         await self.push_frame(RTVIServerMessageFrame(data=message))
@@ -218,7 +221,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
     if not (RELEASE / "config.json").exists():
         raise SystemExit(
             f"No Tone model files in {RELEASE}: put model.opt.onnx, tokenizer.json and config.json there "
-            f"(hf download spellspeak/tone model.opt.onnx tokenizer.json config.json --revision rc3 --local-dir {RELEASE}), "
+            f"(hf download spellspeak/tone model.opt.onnx tokenizer.json config.json --revision rc4 --local-dir {RELEASE}), "
             "or set TONE_DIR"
         )
     threads = int(os.getenv("TONE_THREADS", "4"))

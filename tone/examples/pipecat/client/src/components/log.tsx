@@ -4,6 +4,7 @@ import { useShallow } from "zustand/react/shallow"
 
 import { BY_ID, USER, colorOf, labelOf } from "@/cast"
 import { Panel } from "@/components/panel"
+import { SarcasmMeters } from "@/components/sarcasm"
 import { SENTIMENT_COLOR, actSentiment, emotionSentiment } from "@/sentiment"
 import { type Line, type ToneReading, useRoom } from "@/store"
 
@@ -48,6 +49,15 @@ function ToneLine({ tone }: { tone: ToneReading | undefined }) {
         {e.label}
         {e.label !== "neutral" && <span className="text-muted-foreground/70"> {e.intensity}</span>}
       </span>
+      {tone.sarcasm?.sarcastic && (
+        <span>
+          <span className="text-muted-foreground/50"> · </span>
+          <span className="text-sarcasm">sarcastic</span>
+          {tone.sarcasm.probability !== null && (
+            <span className="text-muted-foreground/70 tabular-nums"> {Math.round(tone.sarcasm.probability * 100)}%</span>
+          )}
+        </span>
+      )}
       {acts.map(([who, a]) => (
         <span key={who}>
           <span className="text-muted-foreground/50"> · </span>
@@ -88,7 +98,8 @@ function Entry({ line, tone, fresh }: { line: Line; tone: ToneReading | undefine
   )
 }
 
-/** The conversation, as a terminal log: each line, who said it, and Tone's reading under it. */
+/** The conversation, as a terminal log: each line, who said it, and Tone's reading under it; beside it, how
+ * sarcastic each person's last line was. */
 export function Log() {
   const lines = useRoom((s) => s.lines)
   const tones = useRoom((s) => s.tones)
@@ -103,8 +114,8 @@ export function Log() {
   }, [lines, tones, thinking.length])
 
   return (
-    <Panel title="log" right={<span className="text-muted-foreground">{lines.length} lines</span>} className="min-h-0 flex-1" bodyClassName="flex flex-col">
-      <div ref={scroll} className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+    <Panel title="log" right={<span className="text-muted-foreground">{lines.length} lines</span>} className="min-h-0 flex-1" bodyClassName="flex">
+      <div ref={scroll} className="min-h-0 min-w-0 flex-1 overflow-y-auto px-3 py-2">
         {lines.length === 0 && (
           <p className="py-1 text-[12px] text-muted-foreground/70">
             the garage is quiet. say something, or type it below<span className="animate-blink">_</span>
@@ -123,6 +134,7 @@ export function Log() {
           </div>
         ))}
       </div>
+      <SarcasmMeters />
     </Panel>
   )
 }

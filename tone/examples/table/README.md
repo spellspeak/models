@@ -28,14 +28,17 @@ transport in → Deepgram STT → Tone (you) → user context → OpenAI
 - **Colour.** A character's colour marks identity only: their name, their border when they speak, their
   voice. Every meter and badge that reads a line is coloured by sentiment (`client/src/sentiment.ts`):
   red for hostile, amber for cold, grey for neutral, green for warm. Hearts take the same scale by level.
+- **Sarcasm.** From Tone rc4 each line also says whether it is sarcastic, with a probability. A sarcastic
+  line gets a teal badge beside its emotion, with that probability. Sarcasm is not a sentiment: the act and
+  the emotion already say how hostile the line is.
 
 ## Run
 
 Tone's model files (`model.opt.onnx`, `tokenizer.json`, `config.json`) go in
-`tone/releases/rc3/` beside the runtime. From the repo's root:
+`tone/releases/rc4/` beside the runtime. From the repo's root:
 
 ```bash
-hf download spellspeak/tone model.opt.onnx tokenizer.json config.json --revision rc3 --local-dir tone/releases/rc3
+hf download spellspeak/tone model.opt.onnx tokenizer.json config.json --revision rc4 --local-dir tone/releases/rc4
 ```
 
 ```bash

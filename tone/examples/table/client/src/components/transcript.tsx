@@ -30,6 +30,7 @@ function Block({ line }: { line: LineMessage }) {
           intensity={line.emotion.intensity}
           confidence={line.emotion.confidence}
           backchannel={line.backchannel}
+          sarcasm={line.sarcasm}
         />
         {Object.entries(line.acts).map(([to, tag]) => (
           <ActRow key={to} to={labelOf(to).toLowerCase()} tag={tag} />

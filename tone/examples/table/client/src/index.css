@@ -28,6 +28,8 @@
   --color-hostile: #f7768e;
   --color-cold: #e0af68;
   --color-warm: #9ece6a;
+  /* A line that means something other than what it says */
+  --color-sarcasm: #73daca;
   --radius: 0rem;
 }
 

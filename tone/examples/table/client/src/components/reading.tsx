@@ -1,6 +1,7 @@
 import {
   Ban,
   CircleX,
+  Drama,
   Ear,
   EyeOff,
   FaceAngry,
@@ -28,7 +29,7 @@ import {
 
 import { Meter, percent } from "@/components/meter"
 import { SENTIMENT_COLOR, actSentiment, emotionSentiment } from "@/sentiment"
-import type { ActTag } from "@/types"
+import type { ActTag, SarcasmTag } from "@/types"
 
 const EMOTION_ICON: Record<string, LucideIcon> = {
   neutral: FaceNeutral,
@@ -97,18 +98,20 @@ function Row({
   )
 }
 
-/** How a line sounded: the emotion, its intensity and how sure Tone is. */
+/** How a line sounded: the emotion, its intensity and how sure Tone is, and a badge when sarcastic. */
 export function EmotionRow({
   label,
   intensity,
   confidence,
   backchannel = false,
+  sarcasm,
   cells,
 }: {
   label: string
   intensity: string
   confidence: number | null
   backchannel?: boolean
+  sarcasm?: SarcasmTag | null
   cells?: number
 }) {
   const s = emotionSentiment(label)
@@ -119,8 +122,9 @@ export function EmotionRow({
       intensity={label === "neutral" ? undefined : intensity}
       confidence={confidence}
       color={SENTIMENT_COLOR[s]}
-      quiet={label === "neutral" && !backchannel}
+      quiet={label === "neutral" && !backchannel && !sarcasm?.sarcastic}
       cells={cells}
+      trailing={sarcasm?.sarcastic ? <SarcasmBadge probability={sarcasm.probability} /> : undefined}
     />
   )
 }
@@ -148,6 +152,17 @@ export function HostileBadge() {
     <span className="inline-flex items-center gap-1 border border-hostile/60 px-1.5 text-[11px] leading-[1.5] tracking-wider text-hostile uppercase">
       <Siren className="size-3" aria-hidden />
       hostile
+    </span>
+  )
+}
+
+/** A sarcastic line, with how likely Tone thinks it is. */
+export function SarcasmBadge({ probability }: { probability: number | null }) {
+  return (
+    <span className="inline-flex items-center gap-1 border border-sarcasm/60 px-1.5 text-[11px] leading-[1.5] tracking-wider text-sarcasm uppercase">
+      <Drama className="size-3" aria-hidden />
+      sarcastic
+      {probability !== null && <span className="tabular-nums">{percent(probability).trim()}</span>}
     </span>
   )
 }

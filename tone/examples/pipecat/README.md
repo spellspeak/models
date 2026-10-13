@@ -14,9 +14,17 @@ courier, and watch her face, her voice and her feelings move with what you say.
 - **Her face** is her mood, one of Tone's nine emotions: her reaction to what you just said, what
   she expresses in her own line as she says it, or, at rest, how she feels about you.
 - **Her voice** carries the same mood: each line opens with an audio tag (`[angry]`, `[happy]`,
-  `[sarcastically]`…) that Eleven v4 Turbo performs rather than says.
+  `[sarcastically]`…) that Eleven v4 Turbo performs rather than says, at the mood's intensity
+  (`[bitter]` for low anger, `[shouts]` for high, `[gasps]` for a real shock). Sarcasm gets an answer
+  in kind (Tone rc4 on): a jab when she likes you makes her sigh, `[sighs] [critical]`; once she
+  doesn't, she gives it back, `[sarcastically]`; teasing makes her laugh, `[laughs] [playful]`; and
+  sarcasm about how things are, she sighs along with, `[sighs] [tired]`. The tables are in
+  `server/config.py`.
 - **Her feelings** sit under her face, a row for each person she feels something about (you, for
   now), with a trend of where it's been.
+- **Sarcasm** (Tone rc4 on): beside the log, a full-height bar for you and one for Nova, with how
+  likely each of your last lines was sarcastic, lit teal when Tone calls it sarcastic. The log marks a
+  sarcastic line beside its emotion, and the scan has a sarcasm row.
 - **The scan** shows the latest line as the models read it; **the timing panel** shows Tone's time
   for every line, in ms on the CPU, with the last, the average and the slowest.
 
@@ -24,7 +32,7 @@ Nothing carries over: every session starts from the feelings in `characters.json
 
 Pipecat 1.12 workers on Daily, Deepgram Flux (speech to text, and when your turn ends), OpenAI
 (gpt-6-luna, reasoning off) for the character, ElevenLabs Eleven v4 Turbo for the voice, and
-Audience rc2.1 and Tone rc3 on the CPU (16-bit files). The client is Vite + React + Motion + the
+Audience rc2.1 and Tone rc4 on the CPU (16-bit files). The client is Vite + React + Motion + the
 Pipecat web client.
 
 ## Run
@@ -33,9 +41,9 @@ Keys go in `.env` here, beside `server/` and `client/` (`.env.example` lists the
 `OPENAI_API_KEY`, `DEEPGRAM_API_KEY`, `ELEVENLABS_API_KEY` and `DAILY_API_KEY` (the dev runner
 makes a Daily room per session with it).
 
-The models' files are read from `audience/releases/rc2.1/` and `tone/releases/rc3/` when they're
+The models' files are read from `audience/releases/rc2.1/` and `tone/releases/rc4/` when they're
 there. In a git checkout they aren't, so the bot downloads them once from Hugging Face
-(`spellspeak/audience` at revision `rc2.1` and `spellspeak/tone` at `rc3`, about 120 MB together) when it starts.
+(`spellspeak/audience` at revision `rc2.1` and `spellspeak/tone` at `rc4`, about 120 MB together) when it starts.
 
 ```bash
 cd server

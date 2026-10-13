@@ -68,6 +68,23 @@ export function Scan() {
             <Segments p={tone.emotion.confidence ?? 0} color={SENTIMENT_COLOR[emotionSentiment(tone.emotion.label)]} count={10} size={6} />
             <span className="text-[12px] tabular-nums text-muted-foreground">{percent(tone.emotion.confidence)}</span>
           </Row>
+          {tone.sarcasm && (
+            <Row label="sarcasm">
+              <span
+                className="w-44 shrink-0 truncate text-[13px] font-bold uppercase"
+                style={{ color: tone.sarcasm.sarcastic ? "var(--color-sarcasm)" : "var(--color-muted-foreground)" }}
+              >
+                {tone.sarcasm.sarcastic ? "sarcastic" : "sincere"}
+              </span>
+              <Segments
+                p={tone.sarcasm.probability ?? 0}
+                color={tone.sarcasm.sarcastic ? "var(--color-sarcasm)" : "var(--color-neutral)"}
+                count={10}
+                size={6}
+              />
+              <span className="text-[12px] tabular-nums text-muted-foreground">{percent(tone.sarcasm.probability)}</span>
+            </Row>
+          )}
           {acts.map(([who, a]) => {
             const color = SENTIMENT_COLOR[actSentiment(a.act, a.hostile)]
             return (

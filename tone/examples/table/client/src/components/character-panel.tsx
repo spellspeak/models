@@ -65,6 +65,7 @@ export function CharacterPanel({ character }: { character: Character }) {
                 intensity={said.emotion.intensity}
                 confidence={said.emotion.confidence}
                 backchannel={said.backchannel}
+                sarcasm={said.sarcasm}
                 cells={10}
               />
               <ActRow to="you" tag={said.acts[PLAYER]} cells={10} />
@@ -87,6 +88,7 @@ export function CharacterPanel({ character }: { character: Character }) {
                 intensity={yours.emotion.intensity}
                 confidence={yours.emotion.confidence}
                 backchannel={yours.backchannel}
+                sarcasm={yours.sarcasm}
                 cells={10}
               />
               <ActRow to={name} tag={yours.acts[character.id]} cells={10} />

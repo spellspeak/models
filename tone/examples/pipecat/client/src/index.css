@@ -30,6 +30,8 @@
   --color-cold: #f0b45c;
   --color-warm: #a6e35f;
   --color-neutral: #8a91c4;
+  /* A line that means something other than what it says */
+  --color-sarcasm: #5eead4;
   --radius: 0rem;
 }
 

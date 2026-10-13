@@ -1,0 +1,77 @@
+{
+ "name": "SpellSpeak Tone",
+ "release": "rc4",
+ "package": "spellspeak-tone-rc4.1",
+ "created": "2026-10-13T21:14:11Z",
+ "contract": "line-tags-0.3",
+ "files": {
+  "README.md": {
+   "bytes": 14522,
+   "sha256": "9991b7a10156b5b26bcb11220db3347f73f502ffc11e0b356402fcd327a55963"
+  },
+  "config.json": {
+   "bytes": 1933,
+   "sha256": "61eea9b2b6c9463460319e7e484f675b8558f4e7ec87439bbf6cf2042a65c2a2"
+  },
+  "example.py": {
+   "bytes": 3225,
+   "sha256": "8ddf42e1dbd41c4f75e7f23f0ea21e7bcdd4a723f92e2fc4e15b646a9726d4e0"
+  },
+  "model.onnx": {
+   "bytes": 111766436,
+   "sha256": "0e4c32cae657161a27b2a1b486f1f78781351cbb6745d78bea4c1a7e7e7dbe3d"
+  },
+  "model.opt.onnx": {
+   "bytes": 111727815,
+   "sha256": "727035a576887a119e60dae1d6271b1f23b1f3fddf386cbd45b8cb38a9494730"
+  },
+  "model_fp16.onnx": {
+   "bytes": 55995133,
+   "sha256": "7d59948b90d24614da8b95a9e09c080d50e60feb32b7ecbbad3c22c537eb91a1"
+  },
+  "requirements.txt": {
+   "bytes": 287,
+   "sha256": "91061e9d80e2cdaf62f522debf73ebcefcfa88930d50c391142b0d73cd72faee"
+  },
+  "runtime/contracts/__init__.py": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "runtime/contracts/schemas/__init__.py": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "runtime/contracts/schemas/line_tags.py": {
+   "bytes": 10306,
+   "sha256": "e48834e280559c1b181cf3fd544bad474f08cb257d42a9be8577fe9e968eb418"
+  },
+  "runtime/harness/__init__.py": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "runtime/harness/expression/__init__.py": {
+   "bytes": 108,
+   "sha256": "faed14f74aaded53734860d18b128475e8724c6961b978fc6100ae533ee2c38c"
+  },
+  "runtime/harness/expression/calibrate.py": {
+   "bytes": 2943,
+   "sha256": "09820027f15c353b20b2d1102d4858c6de7cf48b3ed10015e2d94da1becd5634"
+  },
+  "runtime/harness/expression/classifier.py": {
+   "bytes": 8759,
+   "sha256": "effed190273e2f4dcb7c8b73ea809058873a4d4464aa6e3eb9f85929f12b3bad"
+  },
+  "runtime/harness/expression/decide.py": {
+   "bytes": 1410,
+   "sha256": "563a4145f53538f3ceb0807f4604d1408a6ce730c2c8f6fdc064e76ed2a8dbdc"
+  },
+  "runtime/harness/expression/render.py": {
+   "bytes": 2063,
+   "sha256": "e3b43ff0c8e4c7251fe762805d426a23a5b5b0dae2dde1f90202dfdd54921ac8"
+  },
+  "tokenizer.json": {
+   "bytes": 711494,
+   "sha256": "96662bee05015f08354ccd05bf768f14c2431ae50d8b5761a6273411ad17cfea"
+  }
+ }
+}

@@ -33,9 +33,9 @@ AUDIENCE_FILES = ["encoder_fp16.onnx", "head_fp16.onnx", "tokenizer.json", "conf
 AUDIENCE_HF = ("spellspeak/audience", "rc2.1")
 
 # SpellSpeak Tone: what every line does to each person it's said to or about, and how it sounds.
-TONE_DIR = (EXAMPLE / (os.getenv("TONE_DIR") or "../../releases/rc3")).resolve()
+TONE_DIR = (EXAMPLE / (os.getenv("TONE_DIR") or "../../releases/rc4")).resolve()
 TONE_FILES = ["model_fp16.onnx", "tokenizer.json", "config.json"]
-TONE_HF = ("spellspeak/tone", "rc3")
+TONE_HF = ("spellspeak/tone", "rc4")
 # When a release folder has no model files (a git checkout), they come from Hugging Face, once
 # (`runtimes.model_dir`).
 
@@ -125,8 +125,28 @@ VOICE_TAGS = {
     "disgusted": "[disgusted]",
     "contemptuous": "[sarcastically]",
 }
-# Strong anger is shouted.
-VOICE_TAGS_HIGH = {"angry": "[shouts]"}
+# The same moods at low and at high intensity, where they sound different (Tone gives each reaction
+# and each expressed emotion an intensity; a mood at rest is low). Others keep their tag above.
+VOICE_TAGS_LOW = {"angry": "[bitter]", "contemptuous": "[bored]", "sad": "[let down]"}
+VOICE_TAGS_HIGH = {
+    "angry": "[shouts]",
+    "amused": "[laughs]",
+    "happy": "[excited]",
+    "surprised": "[gasps]",
+}
+# How a character answers a sarcastic line (Tone rc4 on): by what it did to them, and whether they
+# liked the speaker when it was said (SARCASM_LIKED and up). It opens their next line only.
+# "aimed": a hostile act toward them (insult, threat, accusation); "light": another act toward
+# them (a tease, mock praise or thanks, a jab Tone isn't sure of); "situation": nothing toward
+# them, the sarcasm is about how things are.
+SARCASM_LIKED = 50
+SARCASM_REPLY = {
+    ("aimed", True): "[sighs] [critical]",  # a jab from someone they like stings
+    ("aimed", False): "[sarcastically]",  # from someone they don't, they give it back
+    ("light", True): "[laughs] [playful]",  # teasing from a friend
+    ("light", False): "[bored]",  # ...from anyone else: unimpressed
+    ("situation", True): "[sighs] [tired]",  # they commiserate
+}
 
 
 # --- The cast ----------------------------------------------------------------------------------

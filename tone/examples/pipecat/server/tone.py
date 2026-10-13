@@ -4,7 +4,8 @@ Every line is read once, whoever says it: the user's as soon as Audience has sai
 and each character's as it starts playing. Tone is given the line, the line before it, who says it,
 who it's to, and everyone else present (the user and the characters, by name). It answers with the
 speaker's emotion and, for each person, an act (praise, tease, insult, threat…) with an intensity
-and a confidence. One read takes about 10 ms on the CPU, off the event loop.
+and a confidence; from rc4, also whether the line is sarcastic, with its probability. One read takes
+about 10 ms on the CPU, off the event loop.
 """
 
 from __future__ import annotations
@@ -60,6 +61,11 @@ class ToneReading:
             "intensity": t.emotion_intensity,
             "confidence": t.emotion_confidence,
         }
+
+    def sarcasm(self) -> dict[str, Any] | None:
+        """Whether the line is sarcastic, and how likely: rc4 on (None with an earlier release)."""
+        s = getattr(self.tags, "sarcasm", None)
+        return s.model_dump() if s is not None else None
 
 
 class Tone:

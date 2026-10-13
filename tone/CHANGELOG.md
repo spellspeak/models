@@ -2,6 +2,18 @@
 
 Revisions are numbered as in the training repo (`spellspeak/model-training`, `plans/tone/PLAN.md`). The report for each is in that repo under `reports/`.
 
+## rc4 (2026-10-13)
+
+Revision r10: the sarcasm output. Each line also says whether it is sarcastic, with a calibrated probability, from a small head on rc3's encoder in the same pass. rc3's outputs are unchanged, so code written for rc3 runs as before. The contract becomes `line-tags-0.3`, which adds the optional `sarcasm` field and changes nothing from 0.2. Internal release `spellspeak-tone-rc4`, git tag of the same name; packaged for Hugging Face as `spellspeak-tone-rc4.1` with the same model files, the 16-bit file and public tag `rc4`.
+
+- **Sarcasm:** labelled by the committee on 8,538 lines. On held-out game dialogue, F1 0.79 (precision 0.86, recall 0.73), against 0.91 for two of the labellers with each other: a 0.855 target that is not met. Sincere everyday lines called sarcastic 1.55%; calibration error 0.028. On sitcom and Reddit sarcasm it finds little (recall 4% and 9%) and is mostly right when it does.
+- **Measured with and without the optional inputs:** without the line before, sarcasm F1 falls to 0.47; without who a line is for, 0.79.
+- **Tried and not shipped:** heads on richer layers of the same pass (no better), and a head with its own trainable top layer (two points better on test, about a millisecond slower per line).
+- **The same:** every rc3 tag on 3,754 test lines, the speed (9.7 ms for 8 people on four threads), and the 16-bit option (56.0 MB, the same tags and sarcasm decisions).
+- **Package:** the card is in [releases/rc4/README.md](releases/rc4/README.md). The examples now run rc4 and show the sarcasm field: a badge with its probability at the table, and in the garage a bar beside the log for you and for Nova. Nova's voice also answers sarcasm in kind: a sigh at a jab when she likes you, sarcasm back when she doesn't, a laugh at teasing, and her tags now follow the mood's intensity.
+
+Report `2026-10-13-linecls-r10-sarcasm-output.md`.
+
 ## rc3 (2026-10-13)
 
 Revision r9: sarcasm. The encoder was trained again with sarcasm in twelve kinds (aimed at the listener, about the situation, about oneself, between friends) and sincere lines that use the same words, written by Qwen3.8-27B and labelled by the committee, and the move head was rebuilt on it. Sitcom and Reddit sarcasm sets were used only as tests, because none is licensed for training. Internal release `spellspeak-tone-rc3`, git tag of the same name; packaged for Hugging Face as `spellspeak-tone-rc3.1` with the same model files, the 16-bit file and public tag `rc3`.

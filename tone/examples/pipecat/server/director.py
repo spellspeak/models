@@ -604,6 +604,7 @@ class Director:
                 "emotion": reading.emotion(),
                 "acts": reading.acts(),
                 "backchannel": reading.tags.backchannel,
+                "sarcasm": reading.sarcasm(),
                 "changes": [c.to_message() for c in update.changes],
                 "feelings": self.feelings.matrix(),
                 "faces": self.feelings.faces(),
@@ -622,8 +623,11 @@ class Director:
         )
         moved = ", ".join(f"{c.who}→{c.toward} {c.change:+d} ({c.value})" for c in update.changes)
         faces = ", ".join(f"{w} {m.mood}" for w, m in update.moods.items())
+        sarcasm = reading.sarcasm()
+        sarcastic = sarcasm is not None and sarcasm["sarcastic"]
         logger.info(
             f"Tone ({reading.ms:.0f} ms): {who} {tags.emotion}/{tags.emotion_intensity}"
+            + (f", sarcastic ({sarcasm['probability']:.0%})" if sarcastic and sarcasm["probability"] is not None else "")
             + (f"; {acts}" if acts else "")
             + (f"; feelings {moved}" if moved else "")
             + (f"; faces {faces}" if faces else "")

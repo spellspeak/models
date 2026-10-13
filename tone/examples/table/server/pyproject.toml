@@ -6,7 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "pipecat-ai[deepgram,openai,runner,silero,webrtc]==1.12.0",
     "python-dotenv>=1.1,<2",
-    # Tone's reference runtime (releases/rc3/runtime)
+    # Tone's reference runtime (releases/rc4/runtime)
     "onnxruntime>=1.24",
     "tokenizers>=0.23",
     "numpy>=2.0",

@@ -8,6 +8,13 @@ export interface ActTag {
   hostile: boolean
 }
 
+/** Whether a line is sarcastic: it means something other than what its words say (Tone rc4 on). */
+export interface SarcasmTag {
+  sarcastic: boolean
+  /** The chance the line is sarcastic. */
+  probability: number | null
+}
+
 export interface LineMessage {
   type: "line"
   id: number
@@ -20,6 +27,8 @@ export interface LineMessage {
   /** The act toward each other person present, by id. */
   acts: Record<string, ActTag>
   backchannel: boolean
+  /** Null with a release before rc4, which has no sarcasm output. */
+  sarcasm: SarcasmTag | null
   /** Every character's heart, 0 to 100, after this line. */
   hearts: Record<string, number>
   /** The hearts this line moved, by id, and by how much. */

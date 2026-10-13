@@ -10,7 +10,7 @@ speaker has cost them: "Sorry, I crashed your bike" makes up for nothing that wa
 nothing. The user's own feelings aren't kept.
 
 Each character also has a mood, one of Tone's nine emotions, which is the face their portrait shows
-and the tag their voice is given:
+and the tag their voice is given (at its intensity: `VOICE_TAGS`, `VOICE_TAGS_LOW`, `VOICE_TAGS_HIGH`):
 
 - **A reaction**: something said to or about them (an insult makes them angry, praise happy; each
   character can react their own way, `reactions` in `characters.json`), held for MOOD_LINES lines.
@@ -22,7 +22,10 @@ and the tag their voice is given:
 - **At rest**: how they feel about the user (happy if fond, contemptuous if they can't stand them).
 
 A character's next line is voiced, and they're told they feel, as their mood is when they're asked
-for it: a reaction to what was just said, or their mood at rest.
+for it: a reaction to what was just said, or their mood at rest. A sarcastic line (Tone rc4 on) is
+answered in its own voice instead (`SARCASM_REPLY`): a jab from someone they like makes them sigh,
+from someone they don't they give it back, teasing makes a friend laugh, and sarcasm about how
+things are they commiserate with.
 
 This is the small version, for the example: a game's feelings would have more meters (trust,
 affection, fear, respect), buffers, and slower moods.
@@ -39,9 +42,12 @@ from config import (
     EMOTION_AGAINST_CONFIDENCE,
     EMOTION_CONFIDENCE,
     MOOD_LINES,
+    SARCASM_LIKED,
+    SARCASM_REPLY,
     USER,
     VOICE_TAGS,
     VOICE_TAGS_HIGH,
+    VOICE_TAGS_LOW,
     Character,
 )
 
@@ -196,6 +202,8 @@ class Feelings:
         # What each has lost to each other person and not yet had an apology for.
         self.owed: dict[str, dict[str, int]] = {c.id: {} for c in cast}
         self.moods: dict[str, Mood] = {c.id: Mood(resting(self.value[c.id][USER])) for c in cast}
+        # How each answers the line just said, when it was sarcastic: their next line's audio tag.
+        self.reply_voice: dict[str, str] = {}
 
     def matrix(self) -> dict[str, dict[str, int]]:
         return {who: dict(row) for who, row in self.value.items()}
@@ -211,6 +219,13 @@ class Feelings:
         update = Update()
         before = {who: (m.mood, m.intensity) for who, m in self.moods.items()}
         voiced = self.moods[speaker].mood if speaker in self.moods else "neutral"
+        # How each felt about the speaker when it was said, for how they take sarcasm.
+        liked = {
+            who: self.value[who].get(speaker, 50) >= SARCASM_LIKED
+            for who in self.cast
+            if who != speaker
+        }
+        self.reply_voice = {}
         # Reactions fade with every line said in the room; what someone expressed ends when
         # someone else speaks.
         for who, m in self.moods.items():
@@ -251,6 +266,28 @@ class Feelings:
                         face, tag.intensity, "reaction", speaker, tag.act, MOOD_LINES
                     )
 
+        # A sarcastic line is answered in its own voice, by what it did to each of them.
+        sarcasm = getattr(tags, "sarcasm", None)  # Tone rc4 on
+        if sarcasm is not None and sarcasm.sarcastic and not tags.backchannel:
+            from contracts.schemas.line_tags import is_hostile
+
+            for who in self.cast:
+                if who == speaker:
+                    continue
+                act = tags.acts.get(who)
+                sure = act is not None and (
+                    act.confidence is None or act.confidence >= ACT_CONFIDENCE
+                )
+                if act is None or act.act == "none":
+                    aim = "situation"
+                elif sure and is_hostile(act.act, act.intensity):
+                    aim = "aimed"
+                else:
+                    aim = "light"  # a tease, mock praise, or a jab Tone isn't sure of
+                voice = SARCASM_REPLY.get((aim, liked[who]))
+                if voice:
+                    self.reply_voice[who] = voice
+
         # The speaker shows what they say, if Tone is sure of it; surer, if it goes against the mood
         # they were voiced in.
         if speaker in self.cast and tags.emotion != "neutral":
@@ -278,11 +315,13 @@ class Feelings:
         return update
 
     def voice_tag(self, who: str) -> str:
-        """The audio tag a character's next line opens with, for their mood."""
+        """The audio tag a character's next line opens with: their answer to a sarcastic line just
+        said, or their mood at its intensity."""
+        if who in self.reply_voice:
+            return self.reply_voice[who]
         m = self.moods[who]
-        if m.intensity == "high" and m.mood in VOICE_TAGS_HIGH:
-            return VOICE_TAGS_HIGH[m.mood]
-        return VOICE_TAGS.get(m.mood, "")
+        by_intensity = {"low": VOICE_TAGS_LOW, "high": VOICE_TAGS_HIGH}.get(m.intensity, {})
+        return by_intensity.get(m.mood) or VOICE_TAGS.get(m.mood, "")
 
     def note(self, who: str) -> str:
         """What a character is told about their feelings, before they write a line."""

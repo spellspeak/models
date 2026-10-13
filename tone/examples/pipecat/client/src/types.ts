@@ -69,6 +69,13 @@ export interface FeelingChange {
   act: string
 }
 
+/** Whether a line is sarcastic: it means something other than what its words say (Tone rc4 on). */
+export interface SarcasmTag {
+  sarcastic: boolean
+  /** The chance the line is sarcastic. */
+  probability: number | null
+}
+
 /** Tone's reading of a line (yours, or a character's as it starts playing), and what it moved. */
 export type ToneMessage =
   | {
@@ -82,6 +89,8 @@ export type ToneMessage =
       /** The act toward each person present, by id ("player" is you). */
       acts: Record<string, ActTag>
       backchannel: boolean
+      /** Null with a release before rc4, which has no sarcasm output. */
+      sarcasm: SarcasmTag | null
       changes: FeelingChange[]
       feelings: FeelingMatrix
       faces: Record<string, Face>
