@@ -9,7 +9,7 @@ Each model has a folder here: what it does, a model card for every release, its 
 | Model | What it does | Latest release | Weights |
 |---|---|---|---|
 | [SpellSpeak Tone](tone/) | Reads one line of dialogue and says how the speaker sounds and what the line does to each person present: an emotion, a social act, and how sure it is. From rc2 it also says what the line does in the conversation: asks, answers, passes on hearsay, doesn't know, holds back, or closes | [rc3](tone/releases/rc3/) · 2026-10-13: reads sarcasm from the line before | [spellspeak/tone](https://huggingface.co/spellspeak/tone) |
-| [SpellSpeak Audience](audience/) | Works out who a spoken or typed line is for when several AI characters are listening, whether the player or a character said it: one of them, the whole group, or unclear, so a character can ask "Who, me?" instead of taking offence | [rc2.1](audience/releases/rc2.1/) · 2026-10-09: rc2 plus a 16-bit file at half the size | [spellspeak/audience](https://huggingface.co/spellspeak/audience) · [demo](https://huggingface.co/spaces/spellspeak/audience-demo) |
+| [SpellSpeak Audience](audience/) | Works out who a spoken or typed line is for when several AI characters are listening, whether the player or a character said it: one of them, the whole group, or unclear, so a character can ask "Who, me?" instead of taking offence | [rc2.1](audience/releases/rc2.1/) · 2026-10-09: rc2 plus a 16-bit file at half the size | [spellspeak/audience](https://huggingface.co/spellspeak/audience) · [demo](https://huggingface.co/spaces/spellspeak/audience-demo) · [Core ML](audience/coreml/) |
 
 More models join this table as they reach a release candidate.
 

@@ -12,6 +12,7 @@ tags:
   - multi-agent
   - multi-party-conversation
   - addressee-detection
+  - decision-model
   - speech
   - real-time
   - pipecat
@@ -51,6 +52,7 @@ Full precision is the reference. Every other number on this card is full precisi
 | **Size** | About 33M parameters. Full precision (fp32): 131.7 MB in two graphs, a 128.0 MB encoder and a 3.7 MB head. 16-bit: 66.0 MB, a 64.1 MB encoder and a 1.9 MB head. Both use the same 3.6 MB tokenizer |
 | **Speed** | p95 per line on 4 CPU threads (Apple M1 Max): 5.5 ms for 1 person, 5.7 for 2, 6.0 for 4, 6.6 for 8. On 1 thread: 11 to 12 ms. The first line of a scene also encodes everyone's card: 14 ms for 1 person to 61 ms for 8; cards are then cached. The 16-bit files time the same: within a millisecond of full precision's on one thread, timed in the same session |
 | **Runtime** | ONNX Runtime and tokenizers, on CPU. A Python reference runtime ships with it, including the function that turns positions into the spatial facts and an instant rules baseline. It reads full precision unless asked for the 16-bit files (`precision="fp16"`), and it also runs RC1's model files unchanged |
+| **Core ML** | Converted models for iPhone, iPad and Mac in `coreml/`, with a Swift package to run them: [audience/coreml](https://github.com/spellspeak/models/tree/main/audience/coreml) |
 | **Files** | `encoder.onnx` and `head.onnx` (full precision, the default), `encoder_fp16.onnx` and `head_fp16.onnx` (16-bit), `tokenizer.json` and `config.json`, with the reference runtime (`runtime/`), `example.py` and `requirements.txt`. `MANIFEST.json` lists every file with its size and sha256 |
 | **Licence** | Apache-2.0 |
 
