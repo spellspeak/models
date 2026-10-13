@@ -1,0 +1,20 @@
+[project]
+name = "spellspeak-audience-coreml"
+version = "0.1.0"
+description = "SpellSpeak Audience on Core ML: converts a release's ONNX graphs and checks the result against ONNX Runtime"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "coremltools==9.0",
+    "torch==2.7.0",         # the newest torch coremltools 9.0 is tested with
+    "torchvision==0.22.0",  # onnx2torch needs it; the release that matches torch 2.7.0
+    "onnx2torch==1.5.15",
+    "onnx>=1.17",
+    "onnxruntime>=1.24",    # the reference the conversion is checked against
+    "tokenizers>=0.23",
+    "numpy>=2.0,<2.3",
+    "pydantic>=2.6",
+    "huggingface_hub>=0.30",
+]
+
+[tool.uv]
+package = false

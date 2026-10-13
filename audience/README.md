@@ -13,6 +13,7 @@ The runtime calls the human in the conversation the player. Everyone who might b
 - **Out, per line:** `unclear` (it could be for several people, so nobody should take it personally yet) and `to_group` (it is for everyone the speaker is talking with, or for everyone who can hear a question to the room).
 - **Size and speed:** about 33M parameters. Full precision is 131.7 MB in two graphs. From rc2.1 there is also a 16-bit copy of 66.0 MB with the same answers. About 6 ms per line on four CPU threads. Each person's card is encoded once and cached.
 - **Runtime:** ONNX Runtime on CPU. A Python reference runtime ships with each release. It includes the function that turns positions and facings into the facts the model reads, and an instant rules baseline.
+- **On Apple devices:** [Core ML models and a Swift package](coreml/) for iPhone, iPad and Mac, with the same answers as ONNX Runtime.
 
 ## Releases
 

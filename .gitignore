@@ -25,6 +25,7 @@ audience/releases/*/config.json
 audience/releases/*/encoder_fp16.onnx
 audience/releases/*/head_fp16.onnx
 audience/space/release/
+audience/coreml/build/
 *.tsbuildinfo
 
 # The polygon script's check image
