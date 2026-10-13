@@ -24,7 +24,7 @@ Nothing carries over: every session starts from the feelings in `characters.json
 
 Pipecat 1.12 workers on Daily, Deepgram Flux (speech to text, and when your turn ends), OpenAI
 (gpt-6-luna, reasoning off) for the character, ElevenLabs Eleven v4 Turbo for the voice, and
-Audience rc2.1 and Tone rc2.1 on the CPU (16-bit files). The client is Vite + React + Motion + the
+Audience rc2.1 and Tone rc3 on the CPU (16-bit files). The client is Vite + React + Motion + the
 Pipecat web client.
 
 ## Run
@@ -33,9 +33,9 @@ Keys go in `.env` here, beside `server/` and `client/` (`.env.example` lists the
 `OPENAI_API_KEY`, `DEEPGRAM_API_KEY`, `ELEVENLABS_API_KEY` and `DAILY_API_KEY` (the dev runner
 makes a Daily room per session with it).
 
-The models' files are read from `audience/releases/rc2.1/` and `tone/releases/rc2.1/` when they're
+The models' files are read from `audience/releases/rc2.1/` and `tone/releases/rc3/` when they're
 there. In a git checkout they aren't, so the bot downloads them once from Hugging Face
-(`spellspeak/audience` and `spellspeak/tone`, revision `rc2.1`, about 120 MB together) when it starts.
+(`spellspeak/audience` at revision `rc2.1` and `spellspeak/tone` at `rc3`, about 120 MB together) when it starts.
 
 ```bash
 cd server

@@ -33,9 +33,9 @@ AUDIENCE_FILES = ["encoder_fp16.onnx", "head_fp16.onnx", "tokenizer.json", "conf
 AUDIENCE_HF = ("spellspeak/audience", "rc2.1")
 
 # SpellSpeak Tone: what every line does to each person it's said to or about, and how it sounds.
-TONE_DIR = (EXAMPLE / (os.getenv("TONE_DIR") or "../../releases/rc2.1")).resolve()
+TONE_DIR = (EXAMPLE / (os.getenv("TONE_DIR") or "../../releases/rc3")).resolve()
 TONE_FILES = ["model_fp16.onnx", "tokenizer.json", "config.json"]
-TONE_HF = ("spellspeak/tone", "rc2.1")
+TONE_HF = ("spellspeak/tone", "rc3")
 # When a release folder has no model files (a git checkout), they come from Hugging Face, once
 # (`runtimes.model_dir`).
 

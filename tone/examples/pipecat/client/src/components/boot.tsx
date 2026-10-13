@@ -98,7 +98,7 @@ export function Boot({ onConnect, error }: { onConnect: () => void; error: strin
                 }
               />
             ))}
-            <Step i={CAST.length + 1} label="models" value="audience rc2.1 · tone rc2.1 · eleven v4 turbo" />
+            <Step i={CAST.length + 1} label="models" value="audience rc2.1 · tone rc3 · eleven v4 turbo" />
             <Step i={CAST.length + 2} label="microphone" value="asked for when you walk in, or just type" />
             {dialing && <Step i={0} label="session" value={<span className="text-client">{dialing}<span className="animate-blink">_</span></span>} ok={false} />}
             {error && <Step i={0} label="error" value={<span className="text-hostile">{error}</span>} ok={false} />}

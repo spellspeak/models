@@ -28,7 +28,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 load_dotenv(HERE / ".env", override=True)
 
 # Tone's model files and reference runtime: a release folder of this repo.
-RELEASE = pathlib.Path(os.getenv("TONE_DIR", HERE.parent.parent.parent / "releases" / "rc1")).resolve()
+RELEASE = pathlib.Path(os.getenv("TONE_DIR", HERE.parent.parent.parent / "releases" / "rc3")).resolve()
 sys.path.insert(0, str(RELEASE / "runtime"))
 
 from contracts.schemas.line_tags import PLAYER, LineInput, LineTags, is_hostile  # noqa: E402
@@ -217,8 +217,9 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments) -> Non
             raise SystemExit(f"{key} is not set (copy .env.example to .env)")
     if not (RELEASE / "config.json").exists():
         raise SystemExit(
-            f"No Tone model files in {RELEASE}: put model.opt.onnx, tokenizer.json and config.json "
-            "from the release's weights there (or set TONE_DIR)"
+            f"No Tone model files in {RELEASE}: put model.opt.onnx, tokenizer.json and config.json there "
+            f"(hf download spellspeak/tone model.opt.onnx tokenizer.json config.json --revision rc3 --local-dir {RELEASE}), "
+            "or set TONE_DIR"
         )
     threads = int(os.getenv("TONE_THREADS", "4"))
     tone = LineClassifier(RELEASE, threads=threads)

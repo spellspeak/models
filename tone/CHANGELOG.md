@@ -2,6 +2,18 @@
 
 Revisions are numbered as in the training repo (`spellspeak/model-training`, `plans/tone/PLAN.md`). The report for each is in that repo under `reports/`.
 
+## rc3 (2026-10-13)
+
+Revision r9: sarcasm. The encoder was trained again with sarcasm in twelve kinds (aimed at the listener, about the situation, about oneself, between friends) and sincere lines that use the same words, written by Qwen3.8-27B and labelled by the committee, and the move head was rebuilt on it. Sitcom and Reddit sarcasm sets were used only as tests, because none is licensed for training. Internal release `spellspeak-tone-rc3`, git tag of the same name; packaged for Hugging Face as `spellspeak-tone-rc3.1` with the same model files, the 16-bit file and public tag `rc3`.
+
+- **Sarcasm:** on held-out game dialogue, hostile sarcastic lines caught 52% to 73%, sarcasm read at face value 14% to 6%, sincere look-alikes called hostile 5.5% to 3.3%.
+- **Lines in a row:** a short insult or tease after one of the same is read as such; meter scenes 26 of 27 (rc2: 24). The hostility threshold is 0.675, matched to rc2's rate of harmless player lines called hostile.
+- **Worse than rc2:** emotion macro-F1 0.677 to 0.649 (mostly disgust and fear), the move between characters 0.754 to 0.633, and without who a line is for, harmless player lines called hostile 1.9% to 3.9%.
+- **The same:** size, speed (9.6 ms for 8 people on four threads) and the 16-bit file (55.7 MB, the same tags on 99.96% or more of the test lines).
+- **Package:** the card is in [releases/rc3/README.md](releases/rc3/README.md). The examples now run rc3.
+
+Reports `2026-10-13-linecls-r9-sarcasm.md`, `2026-10-13-linecls-r9-sarcasm-test.md`.
+
 ## rc2.1 (2026-10-09)
 
 A smaller file beside full precision, for developers who want the smaller download. `model_fp16.onnx` is rc2's model with its weights stored in 16 bits. rc2's full-precision files are unchanged, byte for byte, and stay the default and the reference for any further training. Internal release `spellspeak-tone-rc2.2`, git tag of the same name, packaged once for Hugging Face with public tag `rc2.1`.

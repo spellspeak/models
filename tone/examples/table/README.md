@@ -32,7 +32,11 @@ transport in → Deepgram STT → Tone (you) → user context → OpenAI
 ## Run
 
 Tone's model files (`model.opt.onnx`, `tokenizer.json`, `config.json`) go in
-`tone/releases/rc1/` beside the runtime, from the release's weights.
+`tone/releases/rc3/` beside the runtime. From the repo's root:
+
+```bash
+hf download spellspeak/tone model.opt.onnx tokenizer.json config.json --revision rc3 --local-dir tone/releases/rc3
+```
 
 ```bash
 cd server
