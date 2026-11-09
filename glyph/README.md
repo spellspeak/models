@@ -12,7 +12,7 @@ The Q5_K_M file is 2.91 GB. On one NVIDIA L4 with five characters it used 2.15 G
 
 | Release | Date | What changed | Card | Hugging Face |
 |---|---|---|---|---|
-| rc1 | 2026-11-09 | First release | [releases/rc1](releases/rc1/README.md) | [jptaylor/glyph-2b](https://huggingface.co/jptaylor/glyph-2b/tree/rc1) |
+| rc1 | 2026-11-09 | First release | [releases/rc1](releases/rc1/README.md) | [jptaylor/spellspeak-glyph-2b](https://huggingface.co/jptaylor/spellspeak-glyph-2b/tree/rc1) |
 
 ## How it scores
 
@@ -27,6 +27,6 @@ uv run --locked example.py
 
 It needs `llama-server` from llama.cpp build b11146 or later on your PATH, and downloads the Q5_K_M file once from Hugging Face.
 
-Weights: [jptaylor/glyph-2b](https://huggingface.co/jptaylor/glyph-2b) (rc1).
+Weights: [jptaylor/spellspeak-glyph-2b](https://huggingface.co/jptaylor/spellspeak-glyph-2b) (rc1).
 
 Licence: Apache-2.0, as is the base model, Google's Gemma 4.
