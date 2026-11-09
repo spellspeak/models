@@ -1,0 +1,79 @@
+{
+ "name": "SpellSpeak Glyph 2B",
+ "release": "rc1",
+ "package": "spellspeak-glyph-rc1.2",
+ "created": "2026-11-09T15:33:46Z",
+ "base_model": "google/gemma-4-E2B-it@3e22461f65e89153144f8adb70e3b8c2cc9845a7",
+ "llama_cpp_build": "b11146",
+ "default_gguf": "gguf/spellspeak-glyph-2b-Q5_K_M.gguf",
+ "files": {
+  "README.md": {
+   "bytes": 6619,
+   "sha256": "96c6022f6462d10b49c275ad5470b7bff34d25855914c53e12ad4313d8b5dfa0"
+  },
+  "chat_template.jinja": {
+   "bytes": 18569,
+   "sha256": "0a2c8073c878ab1da004bee933a998606537bbb62016310352c7285c3f01c5b5"
+  },
+  "config.json": {
+   "bytes": 5276,
+   "sha256": "c9b569cac4f973696fa4742d650f9b20a4f65a39af80fa0b43410eb110237e20"
+  },
+  "example.py": {
+   "bytes": 4141,
+   "sha256": "4c79136406add487814aec2b79602b71b3c9dc5a47bce19ab56bc16c69ee8508"
+  },
+  "generation_config.json": {
+   "bytes": 204,
+   "sha256": "41d5376aca74e1606689852d189938e4e24d707e7f7fa0a4b1c4d8b2abf778ec"
+  },
+  "gguf/spellspeak-glyph-2b-Q5_K_M.gguf": {
+   "bytes": 2907347520,
+   "sha256": "1e9da29ef2c65682d416b9733a78b36aea7a8944437bf282dd2def71db32e00f"
+  },
+  "model.safetensors": {
+   "bytes": 10208852910,
+   "sha256": "7474e037e5eee3cc526fee353d654c92c0d9e517210f0a11d8dcafeb456bea80"
+  },
+  "requirements.txt": {
+   "bytes": 205,
+   "sha256": "6a226dac98679fbd3342f050b256cde6f5b98e0ca4f3934d30315f751b5b2411"
+  },
+  "runtime/contracts/__init__.py": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "runtime/contracts/protocols/__init__.py": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "runtime/contracts/protocols/actor_context.py": {
+   "bytes": 5863,
+   "sha256": "6523973042898dde8b879aad04e0b6ed9b4febe662bc3d12810923b1518395fc"
+  },
+  "runtime/contracts/protocols/output.py": {
+   "bytes": 1688,
+   "sha256": "606d79e2eab3574c5b40f432dbf5519700a6e29629e724de5c1e0bcd1389d2e0"
+  },
+  "runtime/contracts/protocols/template.py": {
+   "bytes": 23374,
+   "sha256": "658f8616d4a6641dc75bdc0f874b297d5804d76fb34bcf5883824bb3e71082ff"
+  },
+  "runtime/contracts/schemas/__init__.py": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "runtime/contracts/schemas/vocab.py": {
+   "bytes": 4686,
+   "sha256": "f832a21f2f15260a4775185d2b09d20381ee37232d1560c65794be6b33a28728"
+  },
+  "tokenizer.json": {
+   "bytes": 32169626,
+   "sha256": "cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f"
+  },
+  "tokenizer_config.json": {
+   "bytes": 3082,
+   "sha256": "9f4fec4b1dc6ecddf8f4a92e9caea5971c0e67d81309f3f9066a2bee8c362633"
+  }
+ }
+}

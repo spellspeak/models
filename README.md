@@ -10,6 +10,8 @@ Each model has a folder here: what it does, a model card for every release, its 
 |---|---|---|---|
 | [SpellSpeak Tone](tone/) | Reads one line of dialogue and says how the speaker sounds and what the line does to each person present: an emotion, a social act, and how sure it is. From rc2 it also says what the line does in the conversation: asks, answers, passes on hearsay, doesn't know, holds back, or closes | [rc4](tone/releases/rc4/) · 2026-10-13: says whether a line is sarcastic, with a probability | [spellspeak/tone](https://huggingface.co/spellspeak/tone) |
 | [SpellSpeak Audience](audience/) | Works out who a spoken or typed line is for when several AI characters are listening, whether the player or a character said it: one of them, the whole group, or unclear, so a character can ask "Who, me?" instead of taking offence | [rc2.1](audience/releases/rc2.1/) · 2026-10-09: rc2 plus a 16-bit file at half the size | [spellspeak/audience](https://huggingface.co/spellspeak/audience) · [demo](https://huggingface.co/spaces/spellspeak/audience-demo) · [Core ML](audience/coreml/) |
+| [SpellSpeak Glyph 2B](glyph/) | Writes one line of in-character dialogue from what a game character knows, small enough to run on the player's machine. The 2B size. Alpha | rc1 · 2026-11-09 | [jptaylor/glyph-2b](https://huggingface.co/jptaylor/glyph-2b) |
+| [SpellSpeak Sigil 4B](sigil/) | Writes one line of in-character dialogue from what a game character knows, small enough to run on the player's machine. The 4B size. Alpha | rc1 · 2026-11-09 | [jptaylor/sigil-4b](https://huggingface.co/jptaylor/sigil-4b) |
 
 More models join this table as they reach a release candidate.
 

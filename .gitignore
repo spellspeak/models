@@ -25,6 +25,20 @@ audience/releases/*/config.json
 audience/releases/*/encoder_fp16.onnx
 audience/releases/*/head_fp16.onnx
 audience/space/release/
+glyph/releases/*/gguf/
+glyph/releases/*/model.safetensors
+glyph/releases/*/tokenizer.json
+glyph/releases/*/config.json
+glyph/releases/*/generation_config.json
+glyph/releases/*/tokenizer_config.json
+glyph/releases/*/chat_template.jinja
+sigil/releases/*/gguf/
+sigil/releases/*/model.safetensors
+sigil/releases/*/tokenizer.json
+sigil/releases/*/config.json
+sigil/releases/*/generation_config.json
+sigil/releases/*/tokenizer_config.json
+sigil/releases/*/chat_template.jinja
 audience/coreml/build/
 *.tsbuildinfo
 
