@@ -1,0 +1,83 @@
+{
+ "name": "SpellSpeak Sigil 4B",
+ "release": "rc1.1",
+ "package": "spellspeak-sigil-rc1.3",
+ "created": "2026-11-09T16:51:44Z",
+ "base_model": "google/gemma-4-E4B-it@ee0ef6023621cff504d758262d4e04895a5af4a2",
+ "llama_cpp_build": "b11146",
+ "default_gguf": "gguf/spellspeak-sigil-4b-Q4_K_M.gguf",
+ "files": {
+  "README.md": {
+   "bytes": 7572,
+   "sha256": "6742e11368e8edffe88a85b3376c5ef2599ace6b5b7493694eb6793e6e8611b4"
+  },
+  "chat_template.jinja": {
+   "bytes": 18569,
+   "sha256": "0a2c8073c878ab1da004bee933a998606537bbb62016310352c7285c3f01c5b5"
+  },
+  "config.json": {
+   "bytes": 5467,
+   "sha256": "8cf75b5e50bb79f5bdf784ccb0d6e1f7c4fe1daf0e8f4be604e08b7a29d962af"
+  },
+  "example.py": {
+   "bytes": 4175,
+   "sha256": "0ab14bf8db1bc5a948b129ff1e798c2637321cd6baabfa370ac161f377292610"
+  },
+  "generation_config.json": {
+   "bytes": 204,
+   "sha256": "41d5376aca74e1606689852d189938e4e24d707e7f7fa0a4b1c4d8b2abf778ec"
+  },
+  "gguf/spellspeak-sigil-4b-Q4_K_M.gguf": {
+   "bytes": 4402595744,
+   "sha256": "27a7b508e9bf35f63301fe90b78cffa048cde88dab6a45fc294291e59cc3a5e0"
+  },
+  "gguf/spellspeak-sigil-4b-Q5_K_M.gguf": {
+   "bytes": 4824319904,
+   "sha256": "10942d68fcc4e21a9a3fab2ad03513a799cd3a53bca51766c0ad63fdef6f0f3f"
+  },
+  "model.safetensors": {
+   "bytes": 15882477500,
+   "sha256": "01188f690bd2649d221105c82de9485e15c736a5dba218061c1d64e689c976ad"
+  },
+  "requirements.txt": {
+   "bytes": 205,
+   "sha256": "6a226dac98679fbd3342f050b256cde6f5b98e0ca4f3934d30315f751b5b2411"
+  },
+  "runtime/contracts/__init__.py": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "runtime/contracts/protocols/__init__.py": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "runtime/contracts/protocols/actor_context.py": {
+   "bytes": 5863,
+   "sha256": "6523973042898dde8b879aad04e0b6ed9b4febe662bc3d12810923b1518395fc"
+  },
+  "runtime/contracts/protocols/output.py": {
+   "bytes": 1688,
+   "sha256": "606d79e2eab3574c5b40f432dbf5519700a6e29629e724de5c1e0bcd1389d2e0"
+  },
+  "runtime/contracts/protocols/template.py": {
+   "bytes": 23374,
+   "sha256": "658f8616d4a6641dc75bdc0f874b297d5804d76fb34bcf5883824bb3e71082ff"
+  },
+  "runtime/contracts/schemas/__init__.py": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "runtime/contracts/schemas/vocab.py": {
+   "bytes": 4686,
+   "sha256": "f832a21f2f15260a4775185d2b09d20381ee37232d1560c65794be6b33a28728"
+  },
+  "tokenizer.json": {
+   "bytes": 32169626,
+   "sha256": "cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f"
+  },
+  "tokenizer_config.json": {
+   "bytes": 3082,
+   "sha256": "9f4fec4b1dc6ecddf8f4a92e9caea5971c0e67d81309f3f9066a2bee8c362633"
+  }
+ }
+}

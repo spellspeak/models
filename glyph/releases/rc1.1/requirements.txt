@@ -1,0 +1,3 @@
+# The reference runtime renders the prompt. Tested with pydantic 2.13.5 and huggingface_hub 0.36.2.
+pydantic>=2.6
+huggingface_hub>=0.30  # only for example.py to fetch a GGUF file when it is not beside it
