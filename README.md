@@ -15,6 +15,8 @@ Each model has a folder here: what it does, a model card for every release, its 
 
 More models join this table as they reach a release candidate.
 
+To teach Glyph or Sigil a game's own world, use [SpellSpeak Inscribe](https://github.com/spellspeak/inscribe). It is a command-line tool that trains a game LoRA from the game's lore and character sheets on your own Modal account, then scores the result. It is an early build. The general training rows it mixes in are public too, as the dataset [spellspeak/replay-pack](https://huggingface.co/datasets/spellspeak/replay-pack).
+
 Training, data and benchmarks live in `spellspeak/model-training`. A release here is a copy of something that repo tagged. A model card carries only measured numbers and names the report and commit they come from.
 
 Everything here is under the [Apache-2.0 licence](LICENSE) unless a model folder says otherwise.
